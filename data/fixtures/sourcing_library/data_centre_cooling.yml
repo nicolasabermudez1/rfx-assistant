@@ -1,0 +1,77 @@
+category: Data Centre Cooling Systems
+category_code: IT-INF-DC-COOL-2026
+last_reviewed: 2026-02-12
+owner: Priya Rai (Senior Category Manager — IT & Digital)
+
+sections:
+  - id: COMPANY
+    title: Company & Capability
+    questions:
+      - "Provide a corporate overview including ownership, parent group, recent M&A activity, and UK trading entity. Disclose any active or pending M&A involving other suppliers in this RFP."
+      - "List all UK data centre cooling installations of ≥ 4 MW commissioned in the last 5 years, with site name, IT load, PUE achieved at year-1 and year-3, and a referenceable client contact."
+      - "Provide your most recent ISO 14001, ISO 45001, ISO 27001 certificates plus current Modern Slavery Act 2015 statement."
+
+  - id: TECH
+    title: Technical Solution
+    questions:
+      - "Describe the proposed cooling architecture for each cluster (A, B, C) bid — chiller plant topology, CRAH/CRAC selection, free cooling strategy, controls platform."
+      - "State the design-point PUE at full IT load using UK Met Office TMY3 data, ASHRAE A1 envelope. Show the calculation including pump and humidification load."
+      - "Confirm refrigerant family and GWP. State your migration plan to GWP ≤ 150 refrigerants by 2030."
+      - "Describe redundancy at chiller, pump, CRAH, and controls level. State the cooling fault scenarios that would breach Tier III+ uptime."
+      - "Detail your AI / ML setpoint optimisation capability. Reference live customer deployments only — no roadmap-only answers."
+
+  - id: COMM
+    title: Commercial
+    questions:
+      - "Provide CapEx broken down by cluster and by sub-system (chillers, CRAH, pumps, controls, BMS integration, commissioning, training)."
+      - "Provide 10-year OpEx model — preventive maintenance, reactive call-outs, consumables (filters, refrigerant top-up, water treatment chemicals), spare parts pool, software licences."
+      - "State payment terms requested. Centrica's standard is Net 60 from valid invoice."
+      - "Confirm price validity period from bid submission. Centrica's standard is 120 days."
+
+  - id: SLA
+    title: Service Levels & Resilience
+    questions:
+      - "Confirm 24/7/365 UK-based critical-response engineering capability. State engineer counts by region (South, Midlands, North, Scotland, Wales)."
+      - "Detail your 4-hour response and 8-hour fix SLA evidence — last 24 months of customer SLA reporting in equivalent critical environments."
+      - "Describe your spare parts strategy — UK warehouse locations, stock value held, replenishment lead times for chillers / compressors / variable-speed drives."
+
+  - id: SUST
+    title: Sustainability & Carbon
+    questions:
+      - "State your Scope 1, 2, 3 emissions for FY24 and FY25, with assurance level. Provide a carbon intensity per kW of installed cooling capacity."
+      - "Provide a lifecycle carbon assessment for the proposed cooling architecture (embodied + operational, kgCO2e per MW IT load over 15 years)."
+      - "Detail water-stewardship measures — make-up water targets per MWh of IT load, water-side economiser hours, drift eliminator specification."
+      - "Provide your science-based target validation status (SBTi). State year of net zero commitment for Scope 1+2 and Scope 3."
+
+  - id: IMPL
+    title: Implementation & Delivery
+    questions:
+      - "Provide a Gantt-level implementation plan aligned to Centrica's site go-live dates (per category strategy §2)."
+      - "State your project management methodology — PRINCE2, PMP, agile-hybrid. Identify named project director."
+      - "Detail your handover-to-operations process — commissioning evidence pack, training hours per site, documentation format."
+
+  - id: RISK
+    title: Risk & Compliance
+    questions:
+      - "Confirm full compliance with the F-Gas Regulation (Regulation (EU) 517/2014, as retained in UK law) and your refrigerant phase-down plan to 2030."
+      - "Provide your tier-2 supply chain disclosure for chiller compressors, refrigerant supply, and rare-earth components in motors / drives."
+      - "Confirm cyber-resilience measures for the cooling controls platform — IEC 62443 alignment, patching cadence, OT/IT segregation."
+
+  - id: SOC
+    title: Social Value
+    questions:
+      - "State UK-direct employment headcount and apprentice / graduate intake last 3 years."
+      - "Detail local sub-contractor spend committed per cluster — Glasgow / Manchester / Cardiff specifically."
+      - "Describe your community-benefit programmes relevant to Centrica's strategic priorities (fuel poverty, energy literacy, STEM outreach)."
+
+response_template:
+  layout: side-by-side
+  required_attachments:
+    - "Worked PUE calculation per cluster"
+    - "10-year OpEx Excel model (Centrica supplied template)"
+    - "Insurance certificates (Employer's, Public, Professional Indemnity ≥ £25m)"
+    - "Sample monthly SLA report from a comparable site"
+    - "Refrigerant phase-down plan with named compounds and dates"
+
+deviation_register:
+  prompt: "If you propose any deviation from this RFP, log it in the supplied Deviation Register (Excel). Each deviation must reference the RFP question ID, state the proposed alternative, the commercial impact, and a Centrica risk owner if accepted."

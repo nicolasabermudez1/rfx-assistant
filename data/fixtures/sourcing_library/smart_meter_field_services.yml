@@ -1,0 +1,26 @@
+category: Smart Meter Field Services (SMETS2)
+category_code: OPS-FIELD-SMART-2026
+last_reviewed: 2026-01-22
+owner: Daniel Carr (Category Manager — Field Operations)
+
+sections:
+  - id: COMPANY
+    title: Company & Capability
+    questions:
+      - "Provide MOA (Meter Operator Agreement) accreditation evidence and current SMICoP membership."
+      - "List your installed-base of SMETS2 endpoints across the UK in the last 24 months, broken down by GSP region."
+  - id: TECH
+    title: Technical Capability
+    questions:
+      - "Describe your DCC (Data Communications Company) integration architecture — adapter, message queueing, retry strategy."
+      - "State your first-time-fix rate for the last 12 months at GSP-region granularity."
+  - id: COMM
+    title: Commercial
+    questions:
+      - "Provide unit pricing per install type (single-fuel, dual-fuel, vulnerable customer, hard-to-reach)."
+      - "Confirm price hold for 18 months."
+  - id: SLA
+    title: Service Levels
+    questions:
+      - "Confirm 95% of appointments delivered within ±15 minutes of the customer-confirmed slot."
+      - "Detail your Vulnerable Customer Code-aligned process."

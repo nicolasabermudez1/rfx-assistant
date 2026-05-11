@@ -1,0 +1,51 @@
+{
+  "framework_id": "SF-COOL-2026-v1",
+  "scored_on": "2026-07-08",
+  "scores": [
+    {
+      "supplier_id": "SUP-AURORA-2026",
+      "supplier_name": "Aurora Cooling Systems Ltd",
+      "criterion_scores": {
+        "COMMERCIAL_TCO":   {"score": 4, "confidence": "high",   "rationale": "Mid-pack CapEx £21.45m, OpEx £18.2m. Net 45 deviation costs ~£42k/yr in working capital. Clusters A+B only, so weighted to bid scope."},
+        "TECH_FIT":         {"score": 4, "confidence": "high",   "rationale": "Magnetic-bearing chillers + 2N redundancy is sound. AI setpoint platform still in beta; first GA September 2026 — concrete but not yet proven at Centrica's scale."},
+        "TECH_INNOV":       {"score": 3, "confidence": "medium", "rationale": "Aurora.IQ promising but unreferencable in production. Immersion-readiness on 2027 roadmap. Solid not stand-out."},
+        "SUSTAIN_PUE":      {"score": 4, "confidence": "high",   "rationale": "PUE 1.22 design point + 4,680 free-cooling hours, both inside Centrica targets. Make-up water 1.4 L/kWh — meets covenant."},
+        "SUSTAIN_CARBON":   {"score": 4, "confidence": "high",   "rationale": "SBTi 1.5°C validated, net zero 2040. Lifecycle 6,820 kgCO2e/MW/15yr — solid, not best."},
+        "RESILIENCE_SLA":   {"score": 3, "confidence": "medium", "rationale": "84 engineers UK-wide is adequate for Clusters A+B, but the 2-engineer Glasgow team is a concentration risk for Cluster B (Manchester+Glasgow). Spare-parts depth £3.8m UK-held."},
+        "IMPLEMENTATION":   {"score": 4, "confidence": "high",   "rationale": "Geoff Marriott has run 6 comparable Tier III mobilisations. Hams Hall date confirmed without caveat. PRINCE2 hardened."},
+        "SOCIAL_VALUE":     {"score": 4, "confidence": "high",   "rationale": "127 apprentices in 3 years, 35% local sub-contractor commitment. Reading University engineering tie."},
+        "RISK_COMPLIANCE":  {"score": 3, "confidence": "high",   "rationale": "F-Gas plan credible (R513A → R454B → R290). 2 boilerplate deviations (liability cap 100%, Net 45) — both resolvable in negotiation."}
+      }
+    },
+    {
+      "supplier_id": "SUP-HELIOS-2026",
+      "supplier_name": "Helios Critical Infrastructure plc",
+      "criterion_scores": {
+        "COMMERCIAL_TCO":   {"score": 3, "confidence": "high",   "rationale": "Highest CapEx £24.82m (16% above field). Lowest OpEx £16.4m partially offsets. NPV @ 6.5% over 10 years marginally higher than Aurora at the design IT load."},
+        "TECH_FIT":         {"score": 5, "confidence": "high",   "rationale": "Vector-X chilled-water plant with N+2 chiller redundancy is over-spec versus Centrica's N+1 floor. Tier IV against Tier III+ requirement."},
+        "TECH_INNOV":       {"score": 5, "confidence": "high",   "rationale": "SmartPath has 41 production EU deployments with 4–7% measured energy savings. Two-phase immersion piloting since 2024."},
+        "SUSTAIN_PUE":      {"score": 5, "confidence": "high",   "rationale": "PUE 1.19 best-in-field, free cooling 4,920 hrs, water 1.3 L/kWh. Refrigerant R1234ze (GWP 7) already below 2030 cliff."},
+        "SUSTAIN_CARBON":   {"score": 5, "confidence": "high",   "rationale": "SBTi validated, net zero 2035 (5 years ahead). Lifecycle 5,940 kgCO2e/MW/15yr lowest in field."},
+        "RESILIENCE_SLA":   {"score": 5, "confidence": "high",   "rationale": "196 UK engineers across all 5 regions including dedicated Glasgow + Cardiff night-shift teams. 99.4% / 98.1% SLA evidence is best-in-field. £11.2m UK spares pool."},
+        "IMPLEMENTATION":   {"score": 4, "confidence": "high",   "rationale": "Sarah Mensah PMP, dedicated programme office. Implementation plan exactly mirrors Centrica's go-live calendar with no flagged dependencies."},
+        "SOCIAL_VALUE":     {"score": 4, "confidence": "high",   "rationale": "284 apprentices, NEA fuel-poverty partnership (strategically aligned to British Gas customer base). Cluster C (Cardiff) sub-contractor spend lowest at 22%."},
+        "RISK_COMPLIANCE":  {"score": 5, "confidence": "high",   "rationale": "Boilerplate accepted verbatim (zero deviations). IEC 62443 SL-3 (above Centrica required SL-2). Annual NCC pen-test. Sole risk: rumoured Stulz acquisition (low severity, watch flag)."}
+      }
+    },
+    {
+      "supplier_id": "SUP-NORTHAIR-2026",
+      "supplier_name": "NorthernAir Solutions GmbH",
+      "criterion_scores": {
+        "COMMERCIAL_TCO":   {"score": 3, "confidence": "medium", "rationale": "Lowest CapEx £19.98m, but OpEx £19.85m highest — OpEx/CapEx ratio of 0.99 is anomalous for adiabatic plant (typical 0.78–0.85). Net 30 vs Centrica Net 60 is a £58k/yr working capital deviation."},
+        "TECH_FIT":         {"score": 3, "confidence": "medium", "rationale": "Adiabatic-Plus is genuinely strong on water stewardship — Cardiff-relevant. But N+1 only (matches floor, no headroom) and AI setpoint roadmap-only."},
+        "TECH_INNOV":       {"score": 2, "confidence": "high",   "rationale": "AI setpoint not deployed anywhere. No immersion roadmap. Innovation case rests on adiabatic engineering pedigree alone."},
+        "SUSTAIN_PUE":      {"score": 3, "confidence": "medium", "rationale": "PUE 1.24 meets but does not exceed 1.25 ceiling. Free-cooling hours 4,450 above 4,200 floor but lowest in field. Water 1.1 L/kWh is best-in-class — worth weighting for Cluster C."},
+        "SUSTAIN_CARBON":   {"score": 2, "confidence": "low",    "rationale": "Lifecycle carbon not provided (mandatory in §5). SBTi committed but not validated. Cannot verify trajectory."},
+        "RESILIENCE_SLA":   {"score": 2, "confidence": "high",   "rationale": "38 UK engineers — light. Cardiff night-shift sub-contracted to unnamed Welsh partner (TPRM blocker). 96.8% / 92.4% SLA evidence below Centrica required 98%/95%."},
+        "IMPLEMENTATION":   {"score": 3, "confidence": "medium", "rationale": "Helmut Bauer credible but UK-time only 30%. 12-week chiller lead-time from Stuttgart is a critical-path risk for the Q3 2026 Hams Hall mobilisation."},
+        "SOCIAL_VALUE":     {"score": 3, "confidence": "high",   "rationale": "44 apprentices in 3 years — adequate. Local sub-contractor spend reasonable but lower than Helios."},
+        "RISK_COMPLIANCE":  {"score": 2, "confidence": "high",   "rationale": "5 contract deviations including liability 100%, F-Gas phase-down 2032 (breaches Centrica 2030 covenant), PI insurance £15m vs required £25m. IEC 62443 only 'in progress'."}
+      }
+    }
+  ]
+}

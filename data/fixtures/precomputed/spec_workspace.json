@@ -1,0 +1,185 @@
+{
+  "event_id": "RFX-IT-INF-DC-COOL-2026",
+  "title": "Data Centre Cooling Systems — IT-INF-DC-COOL-2026",
+  "personas": {
+    "procurement": {
+      "id": "procurement",
+      "name": "Priya Rai",
+      "role": "Senior Category Manager — IT & Digital",
+      "email": "priya.rai@centrica.com",
+      "avatar_initials": "PR",
+      "avatar_color": "#0F2067"
+    },
+    "business": {
+      "id": "business",
+      "name": "Mark Hendricks",
+      "role": "Director of IT Infrastructure (British Gas)",
+      "email": "mark.hendricks@centrica.com",
+      "avatar_initials": "MH",
+      "avatar_color": "#9B2BF7"
+    },
+    "sme": {
+      "id": "sme",
+      "name": "Neil Gallagher",
+      "role": "Principal Critical-Facilities Engineer",
+      "email": "neil.gallagher@centrica.com",
+      "avatar_initials": "NG",
+      "avatar_color": "#85DB9C"
+    }
+  },
+  "sections": [
+    {
+      "id": "BUSINESS_NEED",
+      "title": "Business need & success metrics",
+      "owner": "business",
+      "co_owner": null,
+      "status": "signed_off",
+      "drafted_by": "agent",
+      "last_edited_by": "Mark Hendricks",
+      "last_edited_at": "2026-04-21T16:42:00Z",
+      "content": "We are consolidating the British Gas smart-meter data ingestion (~14 billion meter reads / month from 11.6m SMETS2 endpoints) from a single Slough facility into four regional Tier III+ edge data centres. Cooling underpins our ability to meet the Smart Energy Code data-availability obligation to Ofgem and is the single largest lever for our 2030 Scope 2 commitment.\n\n**Success metrics (12 months post-go-live):**\n1. Zero cooling-driven outages of the SMETS2 ingestion platform.\n2. Operational PUE ≤ 1.28 (design point 1.25 + measurement margin) across all four sites.\n3. ≥ 4,200 free-cooling hours/year achieved per site (measured by BMS).",
+      "ai_questions": [],
+      "comments": [
+        {"by": "Priya Rai", "by_role": "procurement", "at": "2026-04-21T17:01:00Z", "text": "Thanks Mark — locking this in. I'll mirror the success metrics into the evaluation framework so suppliers know what 'good' looks like."}
+      ]
+    },
+    {
+      "id": "PERFORMANCE_REQS",
+      "title": "Performance requirements (PUE, redundancy, free cooling)",
+      "owner": "business",
+      "co_owner": "sme",
+      "status": "signed_off",
+      "drafted_by": "agent",
+      "last_edited_by": "Neil Gallagher",
+      "last_edited_at": "2026-04-22T09:14:00Z",
+      "content": "**Mandatory:**\n- Tier III+ uptime certification of CRAH unit families bid (Uptime Institute or TIA-942 evidence).\n- N+1 redundancy on every cooling subsystem — chilled water plant, CRAH, pumps, controls.\n- PUE design point ≤ 1.25 at full IT load, ASHRAE A1 envelope, UK climate.\n- Water-side economiser or equivalent free cooling active for ≥ 4,200 hours/year (UK Met Office TMY3).\n- F-Gas Regulation compliance — refrigerants with GWP ≤ 675 at award; phase-down to GWP ≤ 150 by 31 December 2030.\n\n**Preferred:**\n- N+2 chiller redundancy where the cluster CapEx delta is < 8%.\n- AI-driven setpoint optimisation with ≥ 12 months of customer-evidenced energy savings.",
+      "ai_questions": [],
+      "comments": [
+        {"by": "Neil Gallagher", "by_role": "sme", "at": "2026-04-22T09:13:00Z", "text": "Tightened the GWP threshold to 675 to match the 2027 F-Gas tightening — caught this in the agent's draft."}
+      ]
+    },
+    {
+      "id": "ACCEPTANCE",
+      "title": "Acceptance criteria & commissioning evidence",
+      "owner": "business",
+      "co_owner": "sme",
+      "status": "awaiting_business",
+      "drafted_by": "agent",
+      "last_edited_by": "Agent",
+      "last_edited_at": "2026-04-22T10:01:00Z",
+      "content": "**Draft for Mark + Neil to confirm:**\n\nEach site shall be considered Accepted upon:\n1. Successful Integrated Systems Test (IST) demonstrating N+1 chiller failover under full IT load with no temperature excursion above ASHRAE A1.\n2. 14-day burn-in at ≥ 80% of design IT load with no critical alarm (Severity 1 or 2).\n3. Provision of a Commissioning Evidence Pack including: as-built drawings, BMS point list, refrigerant log, control sequence of operations, training register (minimum 24 hours per site).\n4. Independent peer review of the IST report by a third party from Centrica's pre-approved list.\n5. Sign-off by the Centrica site authority (Critical-Facilities Engineer) and the Mitie FM partner shift lead.",
+      "ai_questions": [
+        {"id": "Q1", "from": "agent", "at": "2026-04-22T10:01:00Z", "text": "Mark — for Item 4 I've left 'pre-approved list' as a placeholder. Do you want me to seed it with the three names from the Hams Hall refresh (Arup, WSP, Cundall) or leave it open?"},
+        {"id": "Q2", "from": "agent", "at": "2026-04-22T10:01:00Z", "text": "Neil — should the 14-day burn-in be at 80% IT load (current draft) or 100% as the Mitie team suggested in the workshop on April 14th?"}
+      ],
+      "comments": []
+    },
+    {
+      "id": "COMMERCIAL",
+      "title": "Commercial framework & terms",
+      "owner": "procurement",
+      "co_owner": null,
+      "status": "signed_off",
+      "drafted_by": "Priya Rai",
+      "last_edited_by": "Priya Rai",
+      "last_edited_at": "2026-04-19T14:08:00Z",
+      "content": "**Pricing model:** Fixed-price CapEx per cluster + 10-year OpEx schedule (preventive + reactive + consumables) with annual indexation capped at CPI − 1%.\n**Payment terms:** Net 60 from valid invoice (Centrica standard).\n**Price hold:** 120 days from bid submission.\n**Performance bond:** 5% of cluster CapEx for the duration of construction + 12-month defects period.\n**Service credits:** 7.5% of monthly Service Charges per Critical Response SLA breach; 12.5% per Critical Fix SLA breach.\n**Liability cap:** 125% of charges paid in the prior 12 months (Centrica boilerplate §1).",
+      "ai_questions": [],
+      "comments": []
+    },
+    {
+      "id": "EVALUATION",
+      "title": "Evaluation weighting (cross-functional)",
+      "owner": "both",
+      "co_owner": null,
+      "status": "signed_off",
+      "drafted_by": "Priya Rai",
+      "last_edited_by": "Mark Hendricks",
+      "last_edited_at": "2026-04-22T08:30:00Z",
+      "content": "Agreed weighting (subject to Procurement Council ratification):\n- Commercial (TCO, NPV @ 6.5%) — 30%\n- Technical fit — 18%\n- Innovation — 7%\n- Sustainability (PUE) — 10%\n- Sustainability (lifecycle carbon) — 5%\n- Resilience & SLA — 12%\n- Implementation — 8%\n- Social value — 5%\n- Risk & compliance — 5%\n\nProcurement scores Commercial / Resilience / Implementation / Social / Risk. SME panel (chair: Neil Gallagher) scores Technical and Sustainability. Procurement does NOT override SME scores.",
+      "ai_questions": [],
+      "comments": [
+        {"by": "Mark Hendricks", "by_role": "business", "at": "2026-04-22T08:30:00Z", "text": "Agreed. Bumped Technical fit from 16% to 18% to reflect how much heavier our AI-setpoint expectation is than the previous Hams Hall procurement."},
+        {"by": "Priya Rai", "by_role": "procurement", "at": "2026-04-22T08:42:00Z", "text": "Captured. Reduced Innovation by 2% to balance — think that's still fair given Vector-X-class platforms now exist in the market."}
+      ]
+    },
+    {
+      "id": "RISKS",
+      "title": "Risks, mitigations & dependencies",
+      "owner": "both",
+      "co_owner": null,
+      "status": "awaiting_business",
+      "drafted_by": "agent",
+      "last_edited_by": "Priya Rai",
+      "last_edited_at": "2026-04-22T11:50:00Z",
+      "content": "From the category strategy §7 — Mark to confirm appetite:\n\n- **R1 — F-Gas refrigerant phase-down (2027 tightening).** Mitigation: contract clause requiring refrigerant change-out at supplier cost. *Procurement-owned.*\n- **R2 — Skilled-engineer scarcity in Glasgow.** Mitigation: cluster-based allocation, no single-supplier lock-out for B. *Procurement-owned.*\n- **R3 — Welsh Water permitting risk at Cardiff.** Mitigation: technical scope allows fallback to dry coolers with a PUE waiver. *Mark to confirm whether the PUE waiver is acceptable for the Cardiff site, or whether we hold the line at 1.25.*\n- **R4 — Supplier concentration (rumoured Helios → Stulz acquisition).** Mitigation: corporate disclosure clause + change-of-control termination right. *Procurement-owned.*",
+      "ai_questions": [
+        {"id": "Q3", "from": "agent", "at": "2026-04-22T11:50:00Z", "text": "Mark — on R3, the agent recommends accepting a 0.03 PUE waiver (1.25 → 1.28) for Cardiff only, contingent on annual review. Do you accept, accept with conditions, or hold the line?"}
+      ],
+      "comments": []
+    },
+    {
+      "id": "TIMELINE",
+      "title": "Timeline & milestones",
+      "owner": "procurement",
+      "co_owner": null,
+      "status": "signed_off",
+      "drafted_by": "Priya Rai",
+      "last_edited_by": "Priya Rai",
+      "last_edited_at": "2026-04-18T15:22:00Z",
+      "content": "- RFP issue: w/c 11 May 2026\n- Q&A close: 5 June 2026\n- Bid submission: 19 June 2026, 17:00 BST\n- SME panel scoring: w/c 6 July 2026\n- Procurement Council recommendation: 28 July 2026\n- Award: w/c 4 August 2026\n- First site mobilisation (Hams Hall): 1 October 2026",
+      "ai_questions": [],
+      "comments": []
+    },
+    {
+      "id": "STAKEHOLDERS",
+      "title": "Stakeholder map & approvals",
+      "owner": "procurement",
+      "co_owner": null,
+      "status": "signed_off",
+      "drafted_by": "Priya Rai",
+      "last_edited_by": "Priya Rai",
+      "last_edited_at": "2026-04-18T15:30:00Z",
+      "content": "- Mark Hendricks — IT Infrastructure Director (sponsor, decision authority)\n- Priya Rai — Senior Category Manager (procurement lead)\n- Lucy Okafor — Head of Procurement Operations (Ariba & process)\n- Neil Gallagher — Principal Critical-Facilities Engineer (technical SME chair)\n- Aisha Bello (Abi) — TPRM lead\n- Rob Fenwick — ESG & Sustainability Director (PUE and carbon sign-off)\n- Mitie FM partner team — incumbent, advisory only\n- Ofgem RIIO compliance team — informed, not consulted",
+      "ai_questions": [],
+      "comments": []
+    }
+  ],
+  "activity": [
+    {"t": "2026-04-22T11:50:00Z", "actor": "Agent",          "actor_role": "agent",       "icon": "🤖", "action": "asked Mark a question on Risks (Cardiff PUE waiver)"},
+    {"t": "2026-04-22T11:32:00Z", "actor": "Priya Rai",      "actor_role": "procurement", "icon": "📧", "action": "sent reminder email to Mark Hendricks (2 sections pending)"},
+    {"t": "2026-04-22T10:01:00Z", "actor": "Agent",          "actor_role": "agent",       "icon": "🤖", "action": "drafted Acceptance criteria from the workshop transcript"},
+    {"t": "2026-04-22T09:14:00Z", "actor": "Neil Gallagher", "actor_role": "sme",         "icon": "✏️", "action": "edited Performance requirements (tightened GWP threshold)"},
+    {"t": "2026-04-22T08:42:00Z", "actor": "Priya Rai",      "actor_role": "procurement", "icon": "✏️", "action": "rebalanced Evaluation weighting (Innovation -2%)"},
+    {"t": "2026-04-22T08:30:00Z", "actor": "Mark Hendricks", "actor_role": "business",    "icon": "✏️", "action": "edited Evaluation weighting (Technical fit 16% → 18%)"},
+    {"t": "2026-04-21T17:01:00Z", "actor": "Priya Rai",      "actor_role": "procurement", "icon": "💬", "action": "commented on Business need (locked in)"},
+    {"t": "2026-04-21T16:42:00Z", "actor": "Mark Hendricks", "actor_role": "business",    "icon": "✓",  "action": "signed off Business need & success metrics"},
+    {"t": "2026-04-21T15:14:00Z", "actor": "Mark Hendricks", "actor_role": "business",    "icon": "🔗", "action": "joined via magic link (no Centrica SSO needed)"},
+    {"t": "2026-04-21T13:08:00Z", "actor": "Priya Rai",      "actor_role": "procurement", "icon": "🔗", "action": "issued magic link to Mark Hendricks"},
+    {"t": "2026-04-19T14:08:00Z", "actor": "Priya Rai",      "actor_role": "procurement", "icon": "✓",  "action": "signed off Commercial framework & terms"},
+    {"t": "2026-04-18T15:30:00Z", "actor": "Priya Rai",      "actor_role": "procurement", "icon": "✓",  "action": "signed off Timeline + Stakeholder map"},
+    {"t": "2026-04-18T11:00:00Z", "actor": "Agent",          "actor_role": "agent",       "icon": "🤖", "action": "scaffolded all 8 spec sections from the Category Strategy"}
+  ],
+  "agent_chat_seed": {
+    "title": "Talk to the agent",
+    "sub": "Mark and Neil can converse with the AI here — answers feed straight into the spec section above. No template, no chasing.",
+    "history": [
+      {"role": "agent", "text": "Hi Mark — I've drafted Acceptance criteria from the Hams Hall workshop notes. Two open questions for you in the panel above. Anything else you want to adjust before we ship the RFP?"},
+      {"role": "business", "text": "On the burn-in — Mitie were right, push it to 100% IT load. They've seen kit pass at 80% and fall over at 95%."},
+      {"role": "agent", "text": "Got it — updating Item 2 to 100% IT load and noting Mitie's reasoning in the comment thread. Q1 still open: which auditors do you want on the pre-approved list?"}
+    ]
+  },
+  "email_template": {
+    "to": "mark.hendricks@centrica.com",
+    "from": "priya.rai@centrica.com",
+    "cc": "neil.gallagher@centrica.com",
+    "subject": "5 minutes please — IT-INF-DC-COOL-2026 spec needs your input",
+    "body": "Hi Mark,\n\n2 sections of the Data Centre Cooling RFP spec need your input before I can issue to suppliers next Monday:\n\n  • Acceptance criteria & commissioning evidence — 2 questions from the agent\n  • Risks, mitigations & dependencies — Cardiff PUE waiver decision\n\nYou don't need to log into Ariba. Click the link below to talk to the agent directly — it has the full Hams Hall workshop transcript loaded and will pre-fill anything you say into the right spec section. Neil is cc'd in case you'd rather discuss live.\n\n  → Open the spec workspace: https://rfx.centrica.com/spec/IT-INF-DC-COOL-2026?token=mh-7d2f9c\n\nThanks,\nPriya\n--\nPriya Rai · Senior Category Manager · Centrica Procurement"
+  },
+  "magic_link": {
+    "url": "https://rfx.centrica.com/spec/IT-INF-DC-COOL-2026?token=mh-7d2f9c",
+    "expires_at": "2026-04-29T17:00:00Z",
+    "scope": "Mark Hendricks · view + edit business-owned sections only",
+    "issued_at": "2026-04-21T13:08:00Z"
+  }
+}

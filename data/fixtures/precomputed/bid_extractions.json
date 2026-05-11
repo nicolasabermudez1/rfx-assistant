@@ -1,0 +1,166 @@
+{
+  "extractions": [
+    {
+      "supplier_id": "SUP-AURORA-2026",
+      "supplier_name": "Aurora Cooling Systems Ltd",
+      "format": "PDF",
+      "pages": 124,
+      "extraction_confidence": "high",
+      "extracted_sections": {
+        "COMPANY": {
+          "answer": "Aurora Cooling Systems Ltd is a UK-listed (LSE: AURC) critical-cooling specialist with 612 UK employees, established 1998, headquartered Reading. Recent installations: HSBC Hayes (6.4 MW, 2024, year-1 PUE 1.23), NatWest Edinburgh (5.1 MW, 2023, year-3 PUE 1.27), DWP Telford (4.2 MW, 2025, year-1 PUE 1.21). All ISO certificates current to 2027. Modern Slavery statement filed FY25.",
+          "confidence": "high",
+          "evidence_page": 12
+        },
+        "TECH": {
+          "answer": "Proposed architecture: chilled-water topology with 2N redundant 2.4 MW magnetic-bearing chillers per site, water-side economisers active above 7°C ambient (4,680 hrs/year UK TMY3), CRAH selection from Aurora Q-series. Design-point PUE 1.22 at full IT load. Refrigerant R513A (GWP 631 — within F-Gas threshold). AI setpoint optimisation via 'Aurora.IQ' platform, currently in beta with first customer (HSBC) go-live September 2026 — referenced as 'production-grade Q4 2026'.",
+          "confidence": "high",
+          "evidence_page": 27
+        },
+        "COMM": {
+          "answer": "CapEx £21.45m across Clusters A+B (will not bid Cluster C — Welsh permitting risk excluded). 10-year OpEx £18.2m. Payment terms: Net 45 requested. Price validity: 90 days from submission.",
+          "confidence": "high",
+          "evidence_page": 64
+        },
+        "SLA": {
+          "answer": "84 critical-response engineers across Reading, Birmingham, Warrington. South + Midlands strong; Scotland coverage is a 2-engineer Glasgow team supplemented by Warrington travel — fix SLA validated at 7h 50min mean for last 24 months. Spare parts pool £3.8m UK-held.",
+          "confidence": "medium",
+          "evidence_page": 78
+        },
+        "SUST": {
+          "answer": "Scope 1+2 emissions FY25: 14,200 tCO2e, externally assured (KPMG). SBTi 1.5°C validated, net zero target 2040. Lifecycle carbon for Cluster A: 6,820 kgCO2e per MW IT load over 15 years. Make-up water target: 1.4 L/kWh (better than Centrica 1.6 L/kWh covenant).",
+          "confidence": "high",
+          "evidence_page": 91
+        },
+        "IMPL": {
+          "answer": "Project Director: Geoff Marriott, MBE, 22 years critical-cooling. PRINCE2 methodology. Hams Hall mobilisation 1 Oct 2026 confirmed. Slough East 18-month phased delivery aligned to IT fit-out.",
+          "confidence": "high",
+          "evidence_page": 102
+        },
+        "RISK": {
+          "answer": "F-Gas phase-down plan: R513A → R454B (2027) → R290 propane (2029). Tier-2 disclosure: Daikin Japan (compressors), Honeywell US (refrigerant), Schaeffler Germany (drive bearings). IEC 62443 SL-2 alignment confirmed; OT/IT segregation via dedicated VLAN.",
+          "confidence": "high",
+          "evidence_page": 110
+        },
+        "SOC": {
+          "answer": "127 UK apprentices in last 3 years. Local sub-contractor commitment: 35% of Cluster A spend within M4 corridor. STEM outreach: partnership with Reading University engineering faculty.",
+          "confidence": "medium",
+          "evidence_page": 119
+        }
+      },
+      "deviations_count": 2,
+      "anomalies_flagged": []
+    },
+    {
+      "supplier_id": "SUP-HELIOS-2026",
+      "supplier_name": "Helios Critical Infrastructure plc",
+      "format": "Excel",
+      "sheets": ["Summary", "Pricing_CapEx", "Pricing_OpEx", "Technical", "SLAs", "Sustainability", "Risk", "Deviations"],
+      "extraction_confidence": "high",
+      "extracted_sections": {
+        "COMPANY": {
+          "answer": "Helios Critical Infrastructure plc — global critical-environment specialist, 8,400 group employees, 1,408 UK. NYSE-listed parent. UK references: HSBC London (12 MW, 2023, PUE 1.18), Lloyds Manchester (8.5 MW, 2024, PUE 1.20), Pearson Harlow (6.0 MW, 2022, year-3 PUE 1.22). All ISOs plus ISO 22301 business continuity.",
+          "confidence": "high",
+          "evidence_cell": "Summary!B14"
+        },
+        "TECH": {
+          "answer": "Proposed: 'Helios Vector-X' chilled-water plant with adaptive 3-pipe arrangement, full N+2 chiller redundancy, water-side economiser active above 9°C (4,920 hrs/year UK TMY3 at this design). PUE 1.19 design-point full IT load. Refrigerant R1234ze (GWP 7) — well below 150 covenant. AI setpoint via 'Helios SmartPath', 41 production deployments in EU, claimed 4–7% additional energy savings.",
+          "confidence": "high",
+          "evidence_cell": "Technical!B6"
+        },
+        "COMM": {
+          "answer": "CapEx £24.82m across all three clusters (only supplier bidding all three). 10-year OpEx £16.4m — lowest in field. Payment terms: Net 60 (matches Centrica). Price validity: 150 days.",
+          "confidence": "high",
+          "evidence_cell": "Pricing_CapEx!B22"
+        },
+        "SLA": {
+          "answer": "196 UK critical-response engineers across Slough, Manchester, Glasgow, Cardiff, Newcastle. Genuine regional coverage including night-shift Glasgow/Cardiff teams. 24-month SLA evidence: 4hr response 99.4%, 8hr fix 98.1%. UK-held spare parts pool £11.2m.",
+          "confidence": "high",
+          "evidence_cell": "SLAs!B8"
+        },
+        "SUST": {
+          "answer": "Scope 1+2+3 disclosed FY25 with limited assurance (Deloitte). Scope 1+2: 28,400 tCO2e. SBTi 1.5°C validated. Net zero 2035 (5 years ahead of category target). Lifecycle carbon: 5,940 kgCO2e per MW IT load / 15 years. Water target 1.3 L/kWh — best in field. Drift eliminator H-class.",
+          "confidence": "high",
+          "evidence_cell": "Sustainability!B12"
+        },
+        "IMPL": {
+          "answer": "Project Director: Sarah Mensah, P.E. PMP methodology. Phased site mobilisation aligned exactly to Centrica go-live dates. Dedicated programme office staffed for the 4-year build window.",
+          "confidence": "high",
+          "evidence_cell": "Technical!B58"
+        },
+        "RISK": {
+          "answer": "F-Gas: R1234ze already below 2030 cliff. No phase-down required. Tier-2 disclosure complete. IEC 62443 SL-3 (above Centrica required SL-2). Annual pen-test by NCC Group; results shared.",
+          "confidence": "high",
+          "evidence_cell": "Risk!B6"
+        },
+        "SOC": {
+          "answer": "284 UK apprentices in last 3 years. Local sub-contractor spend: 28% Cluster A, 41% Cluster B (Manchester strong), 22% Cluster C. STEM outreach via Helios Foundation, fuel-poverty programme co-delivered with National Energy Action.",
+          "confidence": "high",
+          "evidence_cell": "Sustainability!B40"
+        }
+      },
+      "deviations_count": 0,
+      "anomalies_flagged": [
+        {"type": "M&A", "note": "Trade press reports Helios in advanced talks to acquire Stulz. Could create concentration risk if both shortlisted in future RFPs.", "severity": "low"}
+      ]
+    },
+    {
+      "supplier_id": "SUP-NORTHAIR-2026",
+      "supplier_name": "NorthernAir Solutions GmbH",
+      "format": "Word",
+      "pages": 67,
+      "extraction_confidence": "medium",
+      "extracted_sections": {
+        "COMPANY": {
+          "answer": "NorthernAir Solutions GmbH — German Mittelstand (private), 247 UK employees in NorthernAir UK Ltd subsidiary, group founded 1962 Stuttgart. UK references: BNP Paribas London (3.2 MW, 2024), Bayer Reading (2.4 MW, 2023), Roche Welwyn (4.0 MW, 2025). ISO 14001 / 45001 / 27001 current. ISO 50001 in progress (target Q4 2026).",
+          "confidence": "high",
+          "evidence_page": 8
+        },
+        "TECH": {
+          "answer": "Architecture: NorthernAir 'Adiabatic-Plus' indirect adiabatic with chilled-water trim. N+1 redundancy as per spec. Free cooling 4,450 hrs/year — slightly below Centrica's 4,200 floor in headline but supplier confirms in answer narrative this includes safety-margin derating. Design PUE 1.24 — meets but does not exceed Centrica's 1.25 ceiling. Refrigerant R454B GWP 466. AI setpoint optimisation: roadmap only, not deployed.",
+          "confidence": "medium",
+          "evidence_page": 19
+        },
+        "COMM": {
+          "answer": "CapEx £19.98m across Clusters A+C (will not bid Cluster B — Northern engineering bench too thin). 10-year OpEx £19.85m — highest in field due to higher service-call frequency on adiabatic plant. Payment: Net 30 requested. Price validity: 60 days.",
+          "confidence": "high",
+          "evidence_page": 38
+        },
+        "SLA": {
+          "answer": "38 UK critical-response engineers across Coventry and Bristol. Cluster C (Cardiff) night-shift response sub-contracted to a Welsh facilities partner — supplier confirms 'TBC' on the partner's name in §6.4. SLA evidence: 4hr response 96.8%, 8hr fix 92.4% over 24 months.",
+          "confidence": "low",
+          "evidence_page": 44,
+          "issue": "Sub-contractor name not disclosed; SLA evidence below Centrica required floor."
+        },
+        "SUST": {
+          "answer": "Scope 1+2 FY25: 6,800 tCO2e (group, not UK-only). SBTi committed but not validated. Net zero target 2040. Lifecycle carbon: not provided (states 'available on request'). Water target 1.1 L/kWh — best in field, genuine technical strength on adiabatic plant.",
+          "confidence": "medium",
+          "evidence_page": 51,
+          "issue": "Lifecycle carbon assessment not provided in bid."
+        },
+        "IMPL": {
+          "answer": "Project Director: Helmut Bauer (HQ Stuttgart, 30% UK-time). Methodology: PRINCE2 hybrid. Site mobilisation aligned to Centrica go-lives but flags critical-path dependency on 12-week chiller lead-time from Stuttgart factory.",
+          "confidence": "medium",
+          "evidence_page": 58
+        },
+        "RISK": {
+          "answer": "F-Gas: R454B is GWP 466 — within today's regulatory threshold but supplier proposes 2032 phase-down to GWP <150, which is two years beyond Centrica's contractual 2030 covenant. Tier-2 supply chain partial. IEC 62443 alignment 'in progress'.",
+          "confidence": "high",
+          "evidence_page": 62,
+          "issue": "Refrigerant phase-down date breaches Centrica covenant by 2 years."
+        },
+        "SOC": {
+          "answer": "44 UK apprentices in last 3 years. Local sub-contractor spend: 18% Cluster A, 24% Cluster C. Community programme: STEM outreach via Coventry University.",
+          "confidence": "medium",
+          "evidence_page": 65
+        }
+      },
+      "deviations_count": 5,
+      "anomalies_flagged": [
+        {"type": "ratio", "note": "OpEx/CapEx ratio of 0.99 is anomalous for adiabatic plant (typical: 0.78–0.85). Indicates higher service-call frequency in baseline.", "severity": "medium"},
+        {"type": "completeness", "note": "Lifecycle carbon assessment marked 'available on request' but mandatory in §5 of the RFP.", "severity": "high"},
+        {"type": "subcontract", "note": "Cardiff night-shift partner unnamed — TPRM gating issue.", "severity": "high"}
+      ]
+    }
+  ]
+}

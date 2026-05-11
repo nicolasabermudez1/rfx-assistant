@@ -1,0 +1,70 @@
+{
+  "ranked_at": "2026-07-08T16:00:00Z",
+  "ranking": [
+    {
+      "rank": 1,
+      "supplier_id": "SUP-HELIOS-2026",
+      "supplier_name": "Helios Critical Infrastructure plc",
+      "weighted_score": 4.55,
+      "weighted_score_pct": 91.0,
+      "recommendation": "RECOMMEND for Cluster C (Cardiff) — sole bidder with regional engineering presence and Tier IV plant. Recommend ALSO for Cluster A subject to TCO renegotiation (CapEx is 16% above field).",
+      "rationale_top3": [
+        "Best-in-class technical solution (Tier IV, PUE 1.19, R1234ze GWP 7) with verified production deployments at HSBC London and Lloyds Manchester.",
+        "Only bidder with dedicated Glasgow + Cardiff night-shift teams — directly addresses category strategy R2 (skilled-engineer scarcity in Glasgow) and R3 (Welsh Water permitting).",
+        "Boilerplate accepted verbatim with zero contract deviations — closest to a clean award."
+      ],
+      "watch_flags": [
+        "Trade press reports rumoured Stulz acquisition Q3 2026 — request M&A disclosure clause in contract.",
+        "Highest CapEx — challenge in negotiation; OpEx delta only partly closes the NPV gap."
+      ]
+    },
+    {
+      "rank": 2,
+      "supplier_id": "SUP-AURORA-2026",
+      "supplier_name": "Aurora Cooling Systems Ltd",
+      "weighted_score": 3.71,
+      "weighted_score_pct": 74.2,
+      "recommendation": "RECOMMEND for Cluster A (Slough East + Hams Hall + Reading West) — strongest UK delivery footprint in the M4 corridor where two of three Cluster A sites sit.",
+      "rationale_top3": [
+        "Mature UK references at HSBC, NatWest, DWP at the same Tier III scale Centrica is buying.",
+        "SBTi 1.5°C validated and net zero 2040 — best evidenced sustainability trajectory of the two UK-strongest bidders.",
+        "Two boilerplate deviations (liability 100%, Net 45) are both negotiable on prior-deal precedent."
+      ],
+      "watch_flags": [
+        "AI setpoint platform 'Aurora.IQ' is beta — exclude any innovation-tied service credit until first reference site reports 12 months production data.",
+        "Glasgow engineering bench thin (2 engineers) — do NOT award Cluster B."
+      ]
+    },
+    {
+      "rank": 3,
+      "supplier_id": "SUP-NORTHAIR-2026",
+      "supplier_name": "NorthernAir Solutions GmbH",
+      "weighted_score": 2.59,
+      "weighted_score_pct": 51.8,
+      "recommendation": "DO NOT RECOMMEND for award. Hold for future RFPs where their adiabatic engineering is the lead requirement.",
+      "rationale_top3": [
+        "Adiabatic-Plus engineering is genuinely best-in-class for water stewardship (1.1 L/kWh) — would be Cluster C front-runner if not for SLA, F-Gas, and TPRM gaps.",
+        "5 contract deviations including F-Gas 2032 phase-down (breaches Centrica 2030 covenant) and PI insurance £15m vs £25m required.",
+        "Cardiff night-shift sub-contracted to unnamed Welsh partner — TPRM (Aisha Bello) cannot clear."
+      ],
+      "watch_flags": [
+        "OpEx/CapEx ratio of 0.99 is anomalous — request supplier walkthrough of service-call frequency assumptions.",
+        "Send sorry-but-thanks with constructive feedback themes — this supplier should be invited back for water-led RFPs."
+      ]
+    }
+  ],
+  "award_summary": {
+    "Cluster A — Slough East / Hams Hall / Reading West": "Aurora Cooling Systems Ltd",
+    "Cluster B — Manchester Trafford / Glasgow Eurocentral": "Helios Critical Infrastructure plc",
+    "Cluster C — Cardiff Imperial Park": "Helios Critical Infrastructure plc"
+  },
+  "contract_deviations_consolidated": [
+    {"supplier": "Aurora Cooling Systems Ltd", "clause": "Liability cap", "centrica_position": "125%", "supplier_position": "100%", "negotiation_room": "high", "owner": "Priya Rai"},
+    {"supplier": "Aurora Cooling Systems Ltd", "clause": "Payment terms", "centrica_position": "Net 60", "supplier_position": "Net 45", "negotiation_room": "medium", "owner": "Priya Rai"},
+    {"supplier": "NorthernAir Solutions GmbH", "clause": "Liability cap", "centrica_position": "125%", "supplier_position": "100%", "negotiation_room": "medium", "owner": "Hold"},
+    {"supplier": "NorthernAir Solutions GmbH", "clause": "Payment terms", "centrica_position": "Net 60", "supplier_position": "Net 30", "negotiation_room": "low", "owner": "Hold"},
+    {"supplier": "NorthernAir Solutions GmbH", "clause": "Step-in notice", "centrica_position": "20 BD", "supplier_position": "14 BD", "negotiation_room": "low", "owner": "Hold"},
+    {"supplier": "NorthernAir Solutions GmbH", "clause": "F-Gas phase-down", "centrica_position": "2030 cap GWP 150", "supplier_position": "2032 cap GWP 150", "negotiation_room": "none — covenant breach", "owner": "Hold"},
+    {"supplier": "NorthernAir Solutions GmbH", "clause": "PI insurance", "centrica_position": "£25m", "supplier_position": "£15m", "negotiation_room": "low", "owner": "Hold"}
+  ]
+}

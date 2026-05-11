@@ -1,0 +1,13 @@
+streamlit>=1.36
+requests>=2.31        # Gemini REST API (no SDK — avoids protobuf conflicts with Streamlit)
+python-dotenv>=1.0
+pydantic>=2.8
+python-docx>=1.1
+openpyxl>=3.1
+pypdf>=4.3
+reportlab>=4.0
+pandas>=2.2
+plotly>=5.22
+pyyaml>=6.0
+tenacity>=9.0
+rich>=13.7

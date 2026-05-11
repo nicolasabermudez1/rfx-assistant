@@ -1,0 +1,21 @@
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+data/runs/
+data/state.sqlite
+outputs/*
+!outputs/.gitkeep
+# Keep .streamlit/config.toml but ignore secrets
+.streamlit/secrets.toml
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.claude/
+*.txt
+!README.txt

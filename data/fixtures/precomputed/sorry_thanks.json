@@ -1,0 +1,12 @@
+{
+  "drafts": [
+    {
+      "supplier_id": "SUP-NORTHAIR-2026",
+      "supplier_name": "NorthernAir Solutions GmbH",
+      "primary_contact": "Klaus-Peter Vogt, CEO",
+      "themes": ["SLA evidence below floor", "Contract deviations", "F-Gas covenant misalignment"],
+      "subject": "Centrica RFP IT-INF-DC-COOL-2026 — feedback on your bid",
+      "body": "Dear Klaus-Peter,\n\nThank you for the time and effort your team invested in NorthernAir's response to Centrica's Data Centre Cooling RFP (reference IT-INF-DC-COOL-2026). The Procurement Council met on 28 July and I am writing to confirm that, on this occasion, we are not progressing NorthernAir to contract award.\n\nThe Council recognised the genuine engineering strengths of your Adiabatic-Plus solution — most notably the 1.1 L/kWh make-up water target, which is the best of the field and a meaningful capability for our Welsh sites. The decision was driven by three points where your bid sat below where we needed it for this specific procurement:\n\n1. UK 24/7 critical-response engineering. Your bid showed 38 UK engineers, with Cluster C night-shift sub-contracted to a partner who was unnamed at submission. Centrica's TPRM gating could not be cleared on that basis.\n\n2. SLA evidence. The 24-month track record of 96.8% / 92.4% on response and fix sat below the floor we set in the RFP for this category (98% / 95%).\n\n3. Refrigerant phase-down. The proposed 2032 transition to GWP < 150 refrigerants is two years beyond Centrica's contractual covenant of 2030.\n\nWe would welcome NorthernAir's continued engagement on water-led procurements where the adiabatic capability is centre-stage. Our Battery Energy Storage and Heat Pump categories also have water-stewardship requirements where your team's pedigree would be strongly relevant; Helena Wright on my team will be in touch separately.\n\nThank you again for the bid and for the professionalism of your team throughout the process.\n\nBest regards,\nPriya Rai\nSenior Category Manager, IT & Digital\nCentrica plc"
+    }
+  ]
+}

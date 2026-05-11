@@ -1,0 +1,21 @@
+category: Battery Energy Storage Systems (BESS) — Grid Scale
+category_code: GEN-BESS-2026
+last_reviewed: 2026-03-04
+owner: Helena Wright (Category Manager — Generation Assets)
+
+sections:
+  - id: COMPANY
+    title: Company & Capability
+    questions:
+      - "List grid-connected BESS projects ≥ 50 MW commissioned in the UK or Ireland in the last 5 years."
+      - "Disclose ownership of cell manufacturing tier-2 supply chain (CATL, BYD, LG, Samsung, Tesla, etc.)."
+  - id: TECH
+    title: Technical
+    questions:
+      - "State round-trip efficiency, cycle-life curve, calendar life, and warranty position."
+      - "Describe fire-safety architecture — cell, module, container, system level."
+  - id: COMM
+    title: Commercial
+    questions:
+      - "Provide £/MWh installed CapEx and £/MWh round-trip OpEx (10-year)."
+      - "Confirm performance guarantee — capacity retention curve and liquidated damages."

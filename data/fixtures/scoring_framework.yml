@@ -1,0 +1,81 @@
+framework_id: SF-COOL-2026-v1
+parent_category: IT-INF-DC-COOL-2026
+approver: Mark Hendricks (IT Infrastructure Director)
+approved_on: 2026-02-12
+
+scale:
+  min: 1
+  max: 5
+  anchors:
+    1: Significantly below requirement, material gaps
+    2: Below requirement, gaps require resolution
+    3: Meets requirement, no concerns
+    4: Exceeds requirement, demonstrable benefit
+    5: Best-in-class, sets new benchmark
+
+confidence_levels:
+  - high
+  - medium
+  - low
+
+sme_only_pillars:
+  - TECHNICAL
+  - SUSTAIN
+
+criteria:
+  - id: COMMERCIAL_TCO
+    pillar: COMMERCIAL
+    weight: 30
+    title: Total Cost of Ownership (CapEx + 10-yr OpEx, NPV @ 6.5%)
+    scored_by: Procurement
+    notes: "Includes price-hold compliance and payment-terms alignment with Centrica Net 60."
+
+  - id: TECH_FIT
+    pillar: TECHNICAL
+    weight: 18
+    title: Technical fit — architecture, redundancy, controls
+    scored_by: SME (Neil Gallagher chair)
+
+  - id: TECH_INNOV
+    pillar: TECHNICAL
+    weight: 7
+    title: Innovation — AI setpoint optimisation, immersion readiness
+    scored_by: SME (Neil Gallagher chair)
+
+  - id: SUSTAIN_PUE
+    pillar: SUSTAIN
+    weight: 10
+    title: Design-point PUE & free-cooling hours
+    scored_by: SME (Rob Fenwick — ESG)
+
+  - id: SUSTAIN_CARBON
+    pillar: SUSTAIN
+    weight: 5
+    title: Lifecycle carbon & SBTi alignment
+    scored_by: SME (Rob Fenwick — ESG)
+
+  - id: RESILIENCE_SLA
+    pillar: RESILIENCE
+    weight: 12
+    title: 24/7 critical response, SLA evidence, spare parts depth
+    scored_by: Procurement (with SME validation)
+
+  - id: IMPLEMENTATION
+    pillar: DELIVERY
+    weight: 8
+    title: Implementation plan & PM credibility against site go-lives
+    scored_by: Procurement
+
+  - id: SOCIAL_VALUE
+    pillar: SOCIAL
+    weight: 5
+    title: UK apprentice hours, regional sub-contractor spend, community benefit
+    scored_by: Procurement
+
+  - id: RISK_COMPLIANCE
+    pillar: RISK
+    weight: 5
+    title: F-Gas, Modern Slavery, ISO certs, OT cyber posture
+    scored_by: Procurement (TPRM input from Aisha Bello)
+
+total_weight: 100
