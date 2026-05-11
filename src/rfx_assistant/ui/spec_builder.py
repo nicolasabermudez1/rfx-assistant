@@ -91,23 +91,23 @@ def _bot_reply_for_stage(stage: int, user_msg: str) -> tuple[str, bool]:
     if stage == 0:
         return (
             f"Got it — **{user_msg.strip()}**. A couple of quick questions "
-            f"to build the right spec:\n\n"
-            f"**What is the approximate scale or volume?** "
+            f"to tailor the spec to your product:\n\n"
+            f"**What scale or volume are you looking at?** "
             f"(e.g. number of units, sites, users, or estimated contract value)",
             False,
         )
     if stage == 1:
         return (
-            "Thanks. One more:\n\n"
-            "**Any key constraints or standards that must be met?** "
-            "(e.g. regulatory requirements, certifications, timeline, geographic scope) "
-            "— or type **none** to proceed.",
+            "Thanks. Last question:\n\n"
+            "**Any brand preference, geographic deployment, or must-have features?** "
+            "(e.g. _'Hikvision or Axis, UK only, must have 30m IR and ONVIF integration'_) "
+            "— or type **none** to proceed with sensible defaults.",
             False,
         )
     # stage 2 — ready to generate
     return (
         "Perfect — I have everything I need. "
-        "**Building your technical specification now…**",
+        "**Building your product-specific specification and scoring matrix now…**",
         True,
     )
 
@@ -176,14 +176,27 @@ def _render_chat():
     # If we're ready to generate, do it now (before showing the input)
     if st.session_state.sb_stage == 3 and not st.session_state.sb_generating:
         st.session_state.sb_generating = True
-        with st.spinner("Calling Gemini to build your specification…"):
+        live = agents.gemini_key_available()
+        with st.spinner(
+            "Calling Gemini to tailor your spec + scoring matrix…"
+            if live else
+            "Building your spec from product-specific templates…"
+        ):
             spec = agents.generate_spec_from_conversation(msgs)
         st.session_state.sb_spec = spec
         st.session_state.sb_stage = 4
         st.session_state.sb_generating = False
+        # Hand off scoring criteria to the scoring matrix tab
+        if spec.get("scoring_criteria"):
+            st.session_state["sm_criteria"] = [dict(c) for c in spec["scoring_criteria"]]
+            # Reset any per-scorer "sent" flags from previous spec
+            for k in list(st.session_state.keys()):
+                if k.startswith("sm_sent_") or k.startswith("sm_drafted_"):
+                    st.session_state[k] = False
         _push_activity(
             f"generated spec for '{spec['category']}' "
-            f"({len(spec['requirements'])} requirements)",
+            f"({len(spec['requirements'])} requirements, "
+            f"{len(spec.get('scoring_criteria', []))} scoring criteria)",
             st.session_state.sb_persona,
             icon="🤖",
         )
@@ -215,6 +228,42 @@ def _render_workspace():
 
     # Summary header
     st.markdown(f"**{spec['category']}** — {spec['summary']}")
+
+    # ---- Product Context card (editable) ----
+    spec.setdefault("context", {
+        "brand_preference": "Open to alternatives",
+        "geography": "UK",
+        "quantity": "TBC",
+        "budget": "TBC",
+        "timeline": "TBC",
+    })
+    ctx = spec["context"]
+    with st.expander("📦  Product context — brand, geography, quantity, budget, timeline", expanded=True):
+        ctx_r1 = st.columns(3)
+        ctx["brand_preference"] = ctx_r1[0].text_input(
+            "Brand preference", value=ctx.get("brand_preference", ""),
+            key="sb_ctx_brand",
+        )
+        ctx["geography"] = ctx_r1[1].text_input(
+            "Geography / deployment", value=ctx.get("geography", ""),
+            key="sb_ctx_geo",
+        )
+        ctx["quantity"] = ctx_r1[2].text_input(
+            "Quantity / volume", value=ctx.get("quantity", ""),
+            key="sb_ctx_qty",
+        )
+        ctx_r2 = st.columns(3)
+        ctx["budget"] = ctx_r2[0].text_input(
+            "Target budget", value=ctx.get("budget", ""),
+            key="sb_ctx_budget",
+        )
+        ctx["timeline"] = ctx_r2[1].text_input(
+            "Timeline", value=ctx.get("timeline", ""),
+            key="sb_ctx_timeline",
+        )
+        ctx_r2[2].caption(
+            " \n*These five fields drive the spec's scope — edit freely.*"
+        )
 
     # KPI strip
     n_total = len(reqs)
@@ -249,7 +298,7 @@ def _render_workspace():
                 "ID": r["id"],
                 "Section": r.get("section", "Technical"),
                 "Requirement": r.get("title", ""),
-                "Description & Acceptance Criteria": r.get("description", ""),
+                "Target Specification / Value": r.get("description", ""),
                 "Priority": r.get("priority", "Must"),
                 "Owner": proc_name if r.get("owner") == "procurement" else biz_name,
                 "Status": r.get("status", "Draft").capitalize(),
@@ -265,8 +314,8 @@ def _render_workspace():
                 options=["Technical", "Commercial", "Legal", "Operational", "ESG"],
             ),
             "Requirement": st.column_config.TextColumn("Requirement", width=155),
-            "Description & Acceptance Criteria": st.column_config.TextColumn(
-                "Description & Acceptance Criteria", width=330,
+            "Target Specification / Value": st.column_config.TextColumn(
+                "Target Specification / Value", width=330,
             ),
             "Priority": st.column_config.SelectboxColumn(
                 "Priority", width=90,
@@ -303,7 +352,7 @@ def _render_workspace():
             if (
                 r.get("section") != row["Section"]
                 or r.get("title") != row["Requirement"]
-                or r.get("description") != row["Description & Acceptance Criteria"]
+                or r.get("description") != row["Target Specification / Value"]
                 or r.get("priority") != row["Priority"]
                 or r.get("owner") != new_owner
                 or r.get("status", "Draft").capitalize() != new_status
@@ -311,7 +360,7 @@ def _render_workspace():
             ):
                 r["section"] = row["Section"]
                 r["title"] = row["Requirement"]
-                r["description"] = row["Description & Acceptance Criteria"]
+                r["description"] = row["Target Specification / Value"]
                 r["priority"] = row["Priority"]
                 r["owner"] = new_owner
                 r["status"] = new_status

@@ -65,7 +65,8 @@ _DEFAULT_SUPPLIERS = ["Supplier A", "Supplier B", "Supplier C"]
 
 def _init():
     st.session_state.setdefault("sm_persona", "procurement")
-    st.session_state.setdefault("sm_criteria", [dict(c) for c in _DEFAULT_CRITERIA])
+    # sm_criteria starts empty — populated by Spec Builder when spec is generated
+    st.session_state.setdefault("sm_criteria", [])
     st.session_state.setdefault("sm_suppliers", list(_DEFAULT_SUPPLIERS))
     st.session_state.setdefault("sm_activity", [])
     for pk in PERSONA_KEYS:
@@ -107,16 +108,22 @@ def render():
     my_p = PERSONAS[me]
     criteria: list[dict] = st.session_state.sm_criteria
     suppliers: list[str] = st.session_state.sm_suppliers
+    spec = st.session_state.get("sb_spec")
 
     # ---- Header + persona switcher ----
     col_title, col_persona = st.columns([3, 1])
     with col_title:
         st.markdown("### Scoring Matrix")
-        st.caption(
-            "Score suppliers against weighted criteria. "
-            "Each criterion is assigned to a scorer — fill in your rows "
-            "and send reminders to team members for theirs."
-        )
+        if spec:
+            st.caption(
+                f"Criteria tailored for **{spec['category']}** — "
+                "score suppliers against the dimensions that matter for THIS product."
+            )
+        else:
+            st.caption(
+                "Score suppliers against weighted criteria. "
+                "Criteria are tailored to the product you're buying."
+            )
     with col_persona:
         st.markdown("**Viewing as**")
         pick = st.radio(
@@ -135,6 +142,46 @@ def render():
             st.rerun()
 
     st.divider()
+
+    # ---- Empty state: prompt user to build a spec first ----
+    if not criteria:
+        if spec and spec.get("scoring_criteria"):
+            # Spec exists but criteria not synced — sync now
+            st.session_state.sm_criteria = [dict(c) for c in spec["scoring_criteria"]]
+            criteria = st.session_state.sm_criteria
+        else:
+            st.info(
+                "**No scoring criteria yet.** "
+                "Head over to **📋 Spec Builder** and describe what you're buying — "
+                "the AI will generate a product-specific spec table AND a tailored "
+                "scoring matrix. They'll appear here automatically."
+            )
+            col_a, col_b = st.columns([1, 1])
+            with col_a:
+                if st.button(
+                    "Load generic criteria (skip Spec Builder)",
+                    use_container_width=True,
+                ):
+                    st.session_state.sm_criteria = [dict(c) for c in _DEFAULT_CRITERIA]
+                    st.rerun()
+            return
+
+    # Re-sync from spec if criteria don't match
+    if spec and spec.get("scoring_criteria"):
+        spec_ids = {c["id"] for c in spec["scoring_criteria"]}
+        current_ids = {c["id"] for c in criteria}
+        if spec_ids != current_ids:
+            col_l, col_r = st.columns([4, 1])
+            col_l.warning(
+                f"Scoring criteria differ from the latest spec ({spec['category']}). "
+                "Click → to re-sync."
+            )
+            if col_r.button("🔄  Sync to spec", use_container_width=True):
+                st.session_state.sm_criteria = [dict(c) for c in spec["scoring_criteria"]]
+                for k in list(st.session_state.keys()):
+                    if k.startswith("sm_sent_") or k.startswith("sm_drafted_"):
+                        st.session_state[k] = False
+                st.rerun()
 
     # ---- Supplier name config ----
     with st.expander("Configure supplier names", expanded=False):

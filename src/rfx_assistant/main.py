@@ -21,6 +21,7 @@ if str(_PKG_PARENT) not in sys.path:
 import streamlit as st
 from dotenv import load_dotenv
 
+from rfx_assistant import agents
 from rfx_assistant.branding import inject_css, tokens, DARK_BLUE, DEEP_PURPLE
 from rfx_assistant.ui import spec_builder, scoring_matrix
 
@@ -90,7 +91,15 @@ with st.sidebar:
     )
 
     st.divider()
-    st.caption("Powered by Gemini 2.0 · Centrica Procurement")
+    if agents.gemini_key_available():
+        st.success("🟢  Live AI active (Gemini 2.0)")
+    else:
+        st.warning(
+            "🟡  Demo mode — no `GEMINI_API_KEY` set. "
+            "Spec will use product-specific templates instead of live AI. "
+            "Set the key in Streamlit Cloud → Settings → Secrets to enable any-product live generation."
+        )
+    st.caption("Centrica Procurement Transformation")
 
 # ---------------------------------------------------------------------------
 # Tabs

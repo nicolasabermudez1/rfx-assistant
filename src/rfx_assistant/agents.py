@@ -270,48 +270,94 @@ def _call_gemini_direct(prompt: str) -> str | None:
         return None
 
 
+def gemini_key_available() -> bool:
+    """True if a Gemini API key is configured (so the UI can show 'Live AI')."""
+    return bool(os.getenv("GEMINI_API_KEY"))
+
+
 def generate_spec_from_conversation(messages: list[dict]) -> dict:
     """
-    Build a procurement spec table from a chatbot conversation.
+    Build a procurement spec + scoring matrix from a chatbot conversation.
     Calls Gemini directly (ignores DEMO_OFFLINE_MODE); falls back to
-    keyword-matched demo fixtures if no key or API failure.
+    keyword-matched product-specific fixtures if no key or API failure.
 
     messages: list of {"role": "user"|"assistant", "content": str}
-    Returns: {"category": str, "summary": str, "requirements": list[dict]}
+    Returns: {
+        "category": str,
+        "summary": str,
+        "context": {brand_preference, geography, quantity, budget, timeline},
+        "requirements": list[dict],   # spec rows
+        "scoring_criteria": list[dict] # evaluation criteria for bids
+    }
     """
     user_text = "\n".join(
         m["content"] for m in messages if m["role"] == "user"
     )
 
     prompt = (
-        "You are an expert procurement advisor. "
-        "Based on this procurement conversation, generate a technical specification table.\n\n"
-        "CONVERSATION (user messages only):\n"
+        "You are an expert procurement technologist building a TECHNICAL SPECIFICATION "
+        "for a SPECIFIC product — not a generic procurement template.\n\n"
+        "USER CONVERSATION (what they want to buy):\n"
         f"{user_text}\n\n"
-        "Return ONLY valid JSON — no markdown fences, no explanation — with this exact structure:\n"
+        "TASK: Return ONLY valid JSON (no markdown, no commentary) describing:\n"
+        "  (a) the product context they captured (brand preference, geography, quantity, "
+        "      budget, timeline — extract from the conversation, default to 'TBC' if absent)\n"
+        "  (b) 12 to 16 PRODUCT-SPECIFIC technical requirements with CONCRETE target values\n"
+        "  (c) 6 to 9 weighted scoring criteria for evaluating supplier bids\n\n"
+        "GOOD examples for a security IP camera:\n"
+        '  - "Resolution: 4K (3840x2160) minimum at 30 fps"\n'
+        '  - "Lens: motorised varifocal 2.8-12mm, FoV 110-30 degrees"\n'
+        '  - "IR range: 30 m minimum, smart IR with overexposure control"\n'
+        '  - "IP rating: IP66 (outdoor) / IK10 vandal resistance"\n'
+        '  - "Power: PoE 802.3af, Cat6, < 12 W per camera"\n'
+        '  - "Cybersecurity: signed firmware, TLS 1.2+, complies with UK PSTI Act 2022"\n\n'
+        "BAD examples (never produce these — they are useless boilerplate):\n"
+        '  - "ISO 9001 compliance"  (says nothing about the product)\n'
+        '  - "Quality plan required"  (procurement boilerplate)\n'
+        '  - "Compliance with applicable standards"  (meaningless)\n'
+        '  - "Implementation approach & timeline"  (not a product attribute)\n\n'
+        "JSON SHAPE:\n"
         '{\n'
-        '  "category": "Short spend category name (e.g. Battery Energy Storage Systems)",\n'
-        '  "summary": "1-2 sentence summary of what is being procured and why",\n'
+        '  "category": "Concrete product name (e.g. Security IP Cameras)",\n'
+        '  "summary": "1-2 sentence summary of the procurement",\n'
+        '  "context": {\n'
+        '    "brand_preference": "extracted brand(s) or \'Open to alternatives\'",\n'
+        '    "geography": "deployment region or \'UK\'",\n'
+        '    "quantity": "quantity / volume or \'TBC\'",\n'
+        '    "budget": "budget if mentioned or \'TBC\'",\n'
+        '    "timeline": "timeline if mentioned or \'TBC\'"\n'
+        '  },\n'
         '  "requirements": [\n'
         '    {\n'
         '      "id": "REQ-001",\n'
         '      "section": "Technical",\n'
-        '      "title": "Short requirement name",\n'
-        '      "description": "Detailed description with specific measurable acceptance criteria.",\n'
+        '      "title": "Short attribute name (e.g. Resolution, Lens, IR range)",\n'
+        '      "description": "Concrete measurable target value with units / standards",\n'
         '      "priority": "Must",\n'
         '      "owner": "business",\n'
         '      "status": "Draft",\n'
         '      "comments": ""\n'
         '    }\n'
+        '  ],\n'
+        '  "scoring_criteria": [\n'
+        '    {\n'
+        '      "id": "SC-01",\n'
+        '      "criterion": "Product-specific criterion name (e.g. Image quality at low light)",\n'
+        '      "pillar": "Technical",\n'
+        '      "weight": 20,\n'
+        '      "scorer": "sme"\n'
+        '    }\n'
         '  ]\n'
-        "}\n\n"
-        "Rules:\n"
-        "- Generate 10-14 requirements tailored to this specific spend category.\n"
-        "- section must be one of: Technical, Commercial, Legal, Operational, ESG.\n"
-        "- priority must be one of: Must, Should, Could.\n"
-        "- owner: 'business' for domain/technical sign-off; 'procurement' for commercial/legal.\n"
-        "- Requirements must be specific and measurable, not generic boilerplate.\n"
-        "- Cover all relevant sections for the category (not just Technical)."
+        '}\n\n'
+        "RULES:\n"
+        "- section: one of Technical, Commercial, Legal, Operational, ESG.\n"
+        "- priority: one of Must, Should, Could.\n"
+        "- owner: 'business' for technical/product specs, 'procurement' for commercial/legal/process.\n"
+        "- At least 60% of requirements must be Technical (product-specific attributes).\n"
+        "- scoring_criteria weights MUST sum to exactly 100.\n"
+        "- scoring criteria scorer: 'sme' for technical, 'business' for fit/ESG, 'procurement' for commercial/legal.\n"
+        "- Each scoring criterion must be product-specific (NOT 'Implementation approach', NOT 'Methodology').\n"
+        "- Return raw JSON only. No markdown fences."
     )
 
     raw = _call_gemini_direct(prompt)
@@ -321,7 +367,17 @@ def generate_spec_from_conversation(messages: list[dict]) -> dict:
             if clean.startswith("```"):
                 lines = clean.splitlines()
                 clean = "\n".join(lines[1:-1])
-            return json.loads(clean.strip())
+            parsed = json.loads(clean.strip())
+            # Ensure required keys exist with safe defaults
+            parsed.setdefault("context", {
+                "brand_preference": "Open to alternatives",
+                "geography": "UK",
+                "quantity": "TBC",
+                "budget": "TBC",
+                "timeline": "TBC",
+            })
+            parsed.setdefault("scoring_criteria", _generic_scoring_criteria())
+            return parsed
         except Exception:
             pass
 
@@ -330,6 +386,12 @@ def generate_spec_from_conversation(messages: list[dict]) -> dict:
 
 def _fallback_spec(user_text: str) -> dict:
     t = user_text.lower()
+    if any(k in t for k in ["camera", "cctv", "surveillance", "ip cam", "security cam"]):
+        return _SPEC_CAMERA
+    if any(k in t for k in ["laptop", "notebook", "macbook", "computer", "workstation", "desktop"]):
+        return _SPEC_LAPTOP
+    if any(k in t for k in ["vehicle", "fleet", "van", "truck", "car ", "lorry", "ev "]):
+        return _SPEC_VEHICLE
     if any(k in t for k in ["batter", "bess", "energy storage", "grid storage", "lithium"]):
         return _SPEC_BESS
     if any(k in t for k in ["software", "saas", "cloud", "licence", "license", "platform", "application"]):
@@ -341,9 +403,153 @@ def _fallback_spec(user_text: str) -> dict:
     return _SPEC_GENERIC
 
 
+def _default_context() -> dict:
+    return {
+        "brand_preference": "Open to alternatives",
+        "geography": "UK",
+        "quantity": "TBC",
+        "budget": "TBC",
+        "timeline": "TBC",
+    }
+
+
+def _generic_scoring_criteria() -> list[dict]:
+    return [
+        {"id": "SC-01", "criterion": "Technical capability & fit-for-purpose", "pillar": "Technical",   "weight": 25, "scorer": "sme"},
+        {"id": "SC-02", "criterion": "Build quality & reliability",            "pillar": "Technical",   "weight": 15, "scorer": "sme"},
+        {"id": "SC-03", "criterion": "Total cost of ownership (TCO)",          "pillar": "Commercial",  "weight": 20, "scorer": "procurement"},
+        {"id": "SC-04", "criterion": "Warranty, support & SLA",                "pillar": "Commercial",  "weight": 15, "scorer": "procurement"},
+        {"id": "SC-05", "criterion": "Compliance & regulatory fit",            "pillar": "Legal",       "weight": 10, "scorer": "procurement"},
+        {"id": "SC-06", "criterion": "Supplier ESG credentials",               "pillar": "ESG",         "weight": 10, "scorer": "business"},
+        {"id": "SC-07", "criterion": "Integration & deployment ease",          "pillar": "Operational", "weight":  5, "scorer": "business"},
+    ]
+
+
+_SPEC_CAMERA: dict = {
+    "category": "Security IP Cameras",
+    "summary": "Procurement of networked security cameras (CCTV / IP) including supply, installation, configuration, and integration with the existing NVR / VMS platform.",
+    "context": {
+        "brand_preference": "Hikvision, Axis, or Hanwha — open to alternatives",
+        "geography": "UK (multi-site)",
+        "quantity": "120 units (mix of indoor / outdoor / dome / bullet)",
+        "budget": "TBC",
+        "timeline": "Install Q3 2026",
+    },
+    "requirements": [
+        {"id": "REQ-001", "section": "Technical", "title": "Resolution & frame rate",        "description": "4K (3840x2160) minimum at 30 fps with dual-stream (main + sub-stream H.265+).", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-002", "section": "Technical", "title": "Lens / Field of view",           "description": "Motorised varifocal 2.8-12 mm. FoV 110-30 degrees. Auto-focus and remote zoom required for outdoor variants.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-003", "section": "Technical", "title": "Low-light / WDR",                "description": "Min illumination 0.005 lux colour, 0 lux with IR. True WDR >= 120 dB.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-004", "section": "Technical", "title": "IR night vision",                "description": "Smart IR with overexposure control. 30 m minimum range (dome) / 60 m (bullet).", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-005", "section": "Technical", "title": "Weather & impact rating",        "description": "Outdoor units IP66 and IK10 rated. Operating range -30 degC to +60 degC.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-006", "section": "Technical", "title": "Power & connectivity",           "description": "PoE 802.3af / af+ with Cat6 cabling. Power draw < 12 W per camera. RJ45 with surge protection.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-007", "section": "Technical", "title": "Audio & two-way talk",           "description": "Built-in mic and speaker. Two-way audio over G.711/G.722. Audio metadata in stream.", "priority": "Should", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-008", "section": "Technical", "title": "Onboard storage",                "description": "MicroSD slot up to 256 GB for edge recording during NVR outage. Encrypted at rest.", "priority": "Should", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-009", "section": "Technical", "title": "AI analytics (on-edge)",         "description": "Person / vehicle classification, line crossing, intrusion detection. Min 95% precision in vendor benchmark conditions.", "priority": "Should", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-010", "section": "Technical", "title": "VMS / NVR integration",          "description": "ONVIF Profile S, G and T. Native plug-ins for Milestone XProtect and Genetec Security Center.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-011", "section": "Technical", "title": "Cybersecurity",                  "description": "Signed firmware, TLS 1.2+, 802.1X, no default credentials. Vendor must comply with UK PSTI Act 2022.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-012", "section": "Commercial", "title": "Volume pricing",                 "description": "Tiered unit price for 50 / 100 / 200+ units. Price held firm 12 months from award.", "priority": "Must", "owner": "procurement", "status": "Draft", "comments": ""},
+        {"id": "REQ-013", "section": "Commercial", "title": "Warranty",                       "description": "Minimum 3-year manufacturer warranty (5 years preferred). Advanced replacement (next-business-day) for failed units.", "priority": "Must", "owner": "procurement", "status": "Draft", "comments": ""},
+        {"id": "REQ-014", "section": "Legal", "title": "Data protection / GDPR",              "description": "Compliance with UK GDPR for any recorded personal data. Vendor on UK NCSC Cyber Essentials Plus.", "priority": "Must", "owner": "procurement", "status": "Draft", "comments": ""},
+        {"id": "REQ-015", "section": "ESG", "title": "Energy consumption & e-waste",         "description": "Annual energy consumption disclosure per unit. Take-back scheme for end-of-life devices.", "priority": "Should", "owner": "procurement", "status": "Draft", "comments": ""},
+        {"id": "REQ-016", "section": "Operational", "title": "Install & training",            "description": "Engineer site survey and installation included. 1-day training for client SOC operators on VMS integration.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
+    ],
+    "scoring_criteria": [
+        {"id": "SC-01", "criterion": "Image quality (4K, low-light, WDR)",       "pillar": "Technical",   "weight": 20, "scorer": "sme"},
+        {"id": "SC-02", "criterion": "IR / night vision performance",            "pillar": "Technical",   "weight": 10, "scorer": "sme"},
+        {"id": "SC-03", "criterion": "AI analytics accuracy",                    "pillar": "Technical",   "weight": 10, "scorer": "sme"},
+        {"id": "SC-04", "criterion": "Cybersecurity & firmware integrity",       "pillar": "Technical",   "weight": 10, "scorer": "sme"},
+        {"id": "SC-05", "criterion": "VMS / NVR integration (ONVIF, plug-ins)",  "pillar": "Operational", "weight": 10, "scorer": "business"},
+        {"id": "SC-06", "criterion": "Total cost of ownership (10-yr)",          "pillar": "Commercial",  "weight": 20, "scorer": "procurement"},
+        {"id": "SC-07", "criterion": "Warranty, RMA & support quality",          "pillar": "Commercial",  "weight": 10, "scorer": "procurement"},
+        {"id": "SC-08", "criterion": "Energy use & supplier ESG credentials",    "pillar": "ESG",         "weight": 10, "scorer": "business"},
+    ],
+}
+
+_SPEC_LAPTOP: dict = {
+    "category": "Business Laptops",
+    "summary": "Procurement of business-class laptops for office and remote workers including warranty, imaging, and asset management.",
+    "context": {
+        "brand_preference": "Dell, Lenovo, or HP business range — open to alternatives",
+        "geography": "UK + Ireland",
+        "quantity": "500 units",
+        "budget": "TBC",
+        "timeline": "Refresh wave Q2-Q3 2026",
+    },
+    "requirements": [
+        {"id": "REQ-001", "section": "Technical", "title": "CPU",                "description": "Intel Core Ultra 7 or AMD Ryzen 7 PRO (latest generation), min 12 cores, base clock >= 1.7 GHz.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-002", "section": "Technical", "title": "Memory",             "description": "32 GB DDR5 (dual-channel) standard. 64 GB option for power-user SKU.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-003", "section": "Technical", "title": "Storage",            "description": "1 TB NVMe Gen4 SSD with hardware encryption (TCG Opal 2.0).", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-004", "section": "Technical", "title": "Display",            "description": "14-inch IPS, 1920x1200 (16:10), 400 nits, anti-glare, 100% sRGB.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-005", "section": "Technical", "title": "Battery life",       "description": ">= 12 hours MobileMark 2025 rating. Fast-charge 0-80% in 60 min.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-006", "section": "Technical", "title": "Connectivity",       "description": "Wi-Fi 7, Bluetooth 5.4, 5G WWAN option. 2x Thunderbolt 4, 1x USB-A, HDMI 2.1.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-007", "section": "Technical", "title": "Security",           "description": "TPM 2.0, fingerprint reader, IR camera with Windows Hello, privacy shutter.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-008", "section": "Technical", "title": "Build & durability", "description": "MIL-STD 810H certified. Weight <= 1.4 kg. Spill-resistant keyboard.", "priority": "Should", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-009", "section": "Operational", "title": "Imaging / Autopilot", "description": "Pre-enrolled in Microsoft Intune / Autopilot. Custom Centrica image installed at factory.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-010", "section": "Commercial", "title": "Per-unit price",     "description": "Tiered pricing for 100 / 250 / 500+ units. Price firm for 12 months.", "priority": "Must", "owner": "procurement", "status": "Draft", "comments": ""},
+        {"id": "REQ-011", "section": "Commercial", "title": "Warranty",          "description": "Minimum 3-year next-business-day on-site warranty. Accidental damage cover preferred.", "priority": "Must", "owner": "procurement", "status": "Draft", "comments": ""},
+        {"id": "REQ-012", "section": "Legal", "title": "Cybersecurity assurance",  "description": "Vendor holds Cyber Essentials Plus. BIOS/UEFI compliant with NIST SP 800-147.", "priority": "Must", "owner": "procurement", "status": "Draft", "comments": ""},
+        {"id": "REQ-013", "section": "ESG", "title": "Recycled materials",         "description": "Minimum 30% post-consumer recycled plastic content. EPEAT Gold rating.", "priority": "Should", "owner": "procurement", "status": "Draft", "comments": ""},
+        {"id": "REQ-014", "section": "ESG", "title": "End-of-life take-back",      "description": "Free take-back and certified secure data destruction for retired units.", "priority": "Must", "owner": "procurement", "status": "Draft", "comments": ""},
+    ],
+    "scoring_criteria": [
+        {"id": "SC-01", "criterion": "CPU / memory / storage performance",     "pillar": "Technical",   "weight": 20, "scorer": "sme"},
+        {"id": "SC-02", "criterion": "Display & battery life",                 "pillar": "Technical",   "weight": 15, "scorer": "sme"},
+        {"id": "SC-03", "criterion": "Build quality & MIL-STD durability",     "pillar": "Technical",   "weight": 10, "scorer": "sme"},
+        {"id": "SC-04", "criterion": "Security features (TPM, biometrics)",    "pillar": "Technical",   "weight": 10, "scorer": "sme"},
+        {"id": "SC-05", "criterion": "Total cost (unit + 3-yr warranty)",      "pillar": "Commercial",  "weight": 20, "scorer": "procurement"},
+        {"id": "SC-06", "criterion": "Warranty SLA & RMA experience",          "pillar": "Commercial",  "weight": 10, "scorer": "procurement"},
+        {"id": "SC-07", "criterion": "Intune / Autopilot imaging readiness",   "pillar": "Operational", "weight":  5, "scorer": "business"},
+        {"id": "SC-08", "criterion": "ESG (recycled content, EPEAT, take-back)","pillar": "ESG",        "weight": 10, "scorer": "business"},
+    ],
+}
+
+_SPEC_VEHICLE: dict = {
+    "category": "Light Commercial Vehicles (Electric Van Fleet)",
+    "summary": "Procurement of electric light commercial vehicles for field-services fleet, including charging, telematics, and service contract.",
+    "context": {
+        "brand_preference": "Ford E-Transit, Mercedes eVito, or Vauxhall Vivaro-e — open to alternatives",
+        "geography": "UK (national)",
+        "quantity": "85 vehicles",
+        "budget": "TBC",
+        "timeline": "Delivery Q4 2026",
+    },
+    "requirements": [
+        {"id": "REQ-001", "section": "Technical", "title": "Powertrain",         "description": "Battery-electric. Minimum WLTP range 200 miles fully laden. Continuous power >= 100 kW.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-002", "section": "Technical", "title": "Payload & volume",   "description": "Min 1,000 kg payload. Cargo volume >= 11 m^3. Bulkhead and ply-lined interior.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-003", "section": "Technical", "title": "Charging",           "description": "AC 11 kW Type 2. DC rapid charge >= 115 kW (CCS2). 10-80% in <= 35 min at rapid charger.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-004", "section": "Technical", "title": "Telematics",         "description": "Built-in connected services with REST API. Real-time location, battery SoC, driver behaviour, geofencing.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-005", "section": "Technical", "title": "Safety & ADAS",       "description": "Euro NCAP 4-star minimum. AEB, lane keep, blind-spot monitor, 360 camera as standard.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-006", "section": "Technical", "title": "Racking & livery",   "description": "Internal racking installed at PDI. Centrica livery applied. PAT-tested 12V auxiliary sockets.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-007", "section": "Commercial", "title": "Total cost (lease or purchase)", "description": "Quote both 4-year lease (incl. servicing) and outright purchase TCO. Residual value guarantee where applicable.", "priority": "Must", "owner": "procurement", "status": "Draft", "comments": ""},
+        {"id": "REQ-008", "section": "Commercial", "title": "Service & maintenance", "description": "Manufacturer service plan: fixed-cost servicing for 4 years / 80,000 miles. Mobile service for breakdowns.", "priority": "Must", "owner": "procurement", "status": "Draft", "comments": ""},
+        {"id": "REQ-009", "section": "Commercial", "title": "Warranty",          "description": "Vehicle: minimum 3 years / 100,000 miles. Battery: 8 years / 100,000 miles to 70% capacity.", "priority": "Must", "owner": "procurement", "status": "Draft", "comments": ""},
+        {"id": "REQ-010", "section": "Legal", "title": "Type approval & compliance", "description": "UK type approval. Plug-in Van Grant eligible. Conforms to UK Road Vehicles (Construction & Use) Regulations.", "priority": "Must", "owner": "procurement", "status": "Draft", "comments": ""},
+        {"id": "REQ-011", "section": "ESG", "title": "Battery sourcing & recycling", "description": "Battery cell origin disclosure. Take-back / second-life programme for end-of-service batteries.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-012", "section": "Operational", "title": "Depot charging integration", "description": "Vendor to advise on 22 kW depot charger sizing for the fleet. OCPP 2.0.1 compatible.", "priority": "Should", "owner": "business", "status": "Draft", "comments": ""},
+        {"id": "REQ-013", "section": "Operational", "title": "Driver training",  "description": "EV driver training (regen, range management, charging etiquette) delivered for all 85 drivers at handover.", "priority": "Should", "owner": "business", "status": "Draft", "comments": ""},
+    ],
+    "scoring_criteria": [
+        {"id": "SC-01", "criterion": "Range under load & cold weather",        "pillar": "Technical",   "weight": 20, "scorer": "sme"},
+        {"id": "SC-02", "criterion": "Payload, volume & racking fit",          "pillar": "Technical",   "weight": 15, "scorer": "sme"},
+        {"id": "SC-03", "criterion": "Charging speed & on-board telematics",   "pillar": "Technical",   "weight": 10, "scorer": "sme"},
+        {"id": "SC-04", "criterion": "Total cost of ownership (4-yr)",         "pillar": "Commercial",  "weight": 20, "scorer": "procurement"},
+        {"id": "SC-05", "criterion": "Service network coverage & SLA",         "pillar": "Commercial",  "weight": 10, "scorer": "procurement"},
+        {"id": "SC-06", "criterion": "Battery warranty & residual value",      "pillar": "Commercial",  "weight": 10, "scorer": "procurement"},
+        {"id": "SC-07", "criterion": "Battery sourcing & ESG credentials",     "pillar": "ESG",         "weight": 10, "scorer": "business"},
+        {"id": "SC-08", "criterion": "Driver training & change-management fit", "pillar": "Operational", "weight":  5, "scorer": "business"},
+    ],
+}
+
 _SPEC_BESS: dict = {
     "category": "Battery Energy Storage Systems (BESS)",
     "summary": "Procurement of utility-scale battery energy storage systems including supply, installation, commissioning, and long-term O&M.",
+    "context": {
+        "brand_preference": "Tier-1 lithium-iron-phosphate suppliers — Tesla, Fluence, Wartsila or equivalent",
+        "geography": "UK (3 cluster sites)",
+        "quantity": "30 MWh total across 3 sites",
+        "budget": "TBC",
+        "timeline": "Commissioning H2 2026",
+    },
     "requirements": [
         {"id": "REQ-001", "section": "Technical", "title": "Usable Energy Capacity", "description": "Minimum 10 MWh usable capacity per site at end-of-warranty, demonstrated via factory acceptance test at 100% rated capacity.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
         {"id": "REQ-002", "section": "Technical", "title": "Round-Trip Efficiency", "description": "AC-AC round-trip efficiency >= 88% at rated power, 20 degC ambient, per IEC 62619.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
@@ -360,11 +566,28 @@ _SPEC_BESS: dict = {
         {"id": "REQ-013", "section": "ESG", "title": "Supply Chain Carbon Footprint", "description": "Scope 1, 2, and 3 emissions disclosure for delivered system. Reduction roadmap aligned with SBTi or equivalent.", "priority": "Should", "owner": "procurement", "status": "Draft", "comments": ""},
         {"id": "REQ-014", "section": "Operational", "title": "Commissioning & Training", "description": "FAT and SAT required. Minimum 3-day on-site operator training for client personnel. Grid commissioning sign-off by DNO.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
     ],
+    "scoring_criteria": [
+        {"id": "SC-01", "criterion": "Cell chemistry, capacity & cycle life",    "pillar": "Technical",   "weight": 20, "scorer": "sme"},
+        {"id": "SC-02", "criterion": "Round-trip efficiency & response time",    "pillar": "Technical",   "weight": 10, "scorer": "sme"},
+        {"id": "SC-03", "criterion": "Fire safety & containment design",         "pillar": "Technical",   "weight": 10, "scorer": "sme"},
+        {"id": "SC-04", "criterion": "Grid code / DNO compliance",               "pillar": "Technical",   "weight": 10, "scorer": "sme"},
+        {"id": "SC-05", "criterion": "Total cost of ownership (10-yr)",          "pillar": "Commercial",  "weight": 20, "scorer": "procurement"},
+        {"id": "SC-06", "criterion": "Warranty & performance guarantee",         "pillar": "Commercial",  "weight": 10, "scorer": "procurement"},
+        {"id": "SC-07", "criterion": "Battery recycling & supply-chain ESG",     "pillar": "ESG",         "weight": 10, "scorer": "business"},
+        {"id": "SC-08", "criterion": "Commissioning & operator training quality","pillar": "Operational", "weight": 10, "scorer": "business"},
+    ],
 }
 
 _SPEC_SOFTWARE: dict = {
     "category": "Enterprise Software / SaaS Platform",
     "summary": "Procurement of a cloud-hosted enterprise software platform including licences, implementation, integration, and ongoing support.",
+    "context": {
+        "brand_preference": "Open to alternatives",
+        "geography": "UK (data residency)",
+        "quantity": "5,000 users",
+        "budget": "TBC",
+        "timeline": "Go-live within 90 days of award",
+    },
     "requirements": [
         {"id": "REQ-001", "section": "Technical", "title": "Functional Coverage", "description": "Platform must satisfy all capabilities in the functional requirements schedule (Appendix A). Supplier provides capability mapping: Full / Partial / Not available.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
         {"id": "REQ-002", "section": "Technical", "title": "API & Integration", "description": "RESTful API with OpenAPI 3.0 docs. SAML 2.0 / OAuth 2.0 SSO with Azure AD. Integration connectors for SAP S/4HANA and Microsoft 365 required.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
@@ -380,11 +603,28 @@ _SPEC_SOFTWARE: dict = {
         {"id": "REQ-012", "section": "Operational", "title": "Training & Change Management", "description": "Role-based training for end users, admins, and super users. Min 40-hour live training plus online self-service materials.", "priority": "Should", "owner": "business", "status": "Draft", "comments": ""},
         {"id": "REQ-013", "section": "ESG", "title": "Carbon Neutral Hosting", "description": "Cloud hosting powered by 100% renewable energy or equivalent offsets. Annual carbon footprint report for client instance.", "priority": "Should", "owner": "procurement", "status": "Draft", "comments": ""},
     ],
+    "scoring_criteria": [
+        {"id": "SC-01", "criterion": "Functional coverage of requirements", "pillar": "Technical",   "weight": 20, "scorer": "sme"},
+        {"id": "SC-02", "criterion": "API depth & integration readiness",   "pillar": "Technical",   "weight": 15, "scorer": "sme"},
+        {"id": "SC-03", "criterion": "Performance & scalability evidence",  "pillar": "Technical",   "weight": 10, "scorer": "sme"},
+        {"id": "SC-04", "criterion": "ISO 27001 / pen-test assurance",      "pillar": "Legal",       "weight": 10, "scorer": "procurement"},
+        {"id": "SC-05", "criterion": "3-year TCO (licence + implementation)","pillar": "Commercial", "weight": 20, "scorer": "procurement"},
+        {"id": "SC-06", "criterion": "SLA, support & uptime",                "pillar": "Commercial",  "weight": 10, "scorer": "procurement"},
+        {"id": "SC-07", "criterion": "Exit & data portability strength",     "pillar": "Commercial",  "weight":  5, "scorer": "procurement"},
+        {"id": "SC-08", "criterion": "Carbon-neutral hosting commitments",   "pillar": "ESG",         "weight": 10, "scorer": "business"},
+    ],
 }
 
 _SPEC_COOLING: dict = {
     "category": "Data Centre Cooling Systems",
     "summary": "Procurement of high-efficiency cooling for Tier III+ data centres, targeting PUE <= 1.25 and net-zero alignment.",
+    "context": {
+        "brand_preference": "Open to alternatives — Tier-1 DC cooling specialists",
+        "geography": "UK (3 cluster sites: London, Midlands, North)",
+        "quantity": "6 MW IT load total",
+        "budget": "TBC",
+        "timeline": "Phased install 2026-2027",
+    },
     "requirements": [
         {"id": "REQ-001", "section": "Technical", "title": "Cooling Capacity", "description": "Min 2 MW IT load cooling per cluster with N+1 redundancy. Demonstrated via thermal load test at 100% design IT load.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
         {"id": "REQ-002", "section": "Technical", "title": "PUE Target", "description": "Annualised PUE <= 1.25 at 100% IT load across all clusters. Measured monthly via DCIM integration.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
@@ -399,11 +639,27 @@ _SPEC_COOLING: dict = {
         {"id": "REQ-011", "section": "ESG", "title": "Net Zero Alignment", "description": "SBTi-aligned or equivalent net-zero pathway. Scope 1 and 2 emissions from this contract disclosed and offset annually.", "priority": "Should", "owner": "procurement", "status": "Draft", "comments": ""},
         {"id": "REQ-012", "section": "Operational", "title": "Commissioning & FAT/SAT", "description": "Full factory and site acceptance tests. Commissioning plan 4 weeks before installation. Client sign-off on FAT/SAT reports.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
     ],
+    "scoring_criteria": [
+        {"id": "SC-01", "criterion": "PUE achievable at 100% IT load",       "pillar": "Technical",   "weight": 25, "scorer": "sme"},
+        {"id": "SC-02", "criterion": "Free-cooling hours & refrigerant GWP", "pillar": "Technical",   "weight": 15, "scorer": "sme"},
+        {"id": "SC-03", "criterion": "Resilience & failover design",         "pillar": "Technical",   "weight": 10, "scorer": "sme"},
+        {"id": "SC-04", "criterion": "10-year TCO incl. energy",             "pillar": "Commercial",  "weight": 20, "scorer": "procurement"},
+        {"id": "SC-05", "criterion": "Service SLA & spare-parts coverage",   "pillar": "Commercial",  "weight": 10, "scorer": "procurement"},
+        {"id": "SC-06", "criterion": "Net-zero pathway alignment",           "pillar": "ESG",         "weight": 10, "scorer": "business"},
+        {"id": "SC-07", "criterion": "Commissioning quality & site evidence","pillar": "Operational", "weight": 10, "scorer": "business"},
+    ],
 }
 
 _SPEC_SERVICES: dict = {
     "category": "Professional / Managed Services",
     "summary": "Procurement of specialist advisory or managed services with defined deliverables, governance, and performance management.",
+    "context": {
+        "brand_preference": "Open to all qualified providers",
+        "geography": "UK",
+        "quantity": "Single-supplier engagement",
+        "budget": "TBC",
+        "timeline": "TBC",
+    },
     "requirements": [
         {"id": "REQ-001", "section": "Technical", "title": "Statement of Work", "description": "Detailed SoW covering all deliverables, exclusions, dependencies, and assumptions. To be agreed before contract signature.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
         {"id": "REQ-002", "section": "Technical", "title": "Team Qualifications", "description": "Named key personnel with verified qualifications confirmed at award. No substitution without written client consent within first 6 months.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
@@ -418,11 +674,27 @@ _SPEC_SERVICES: dict = {
         {"id": "REQ-011", "section": "ESG", "title": "Supplier ESG Commitments", "description": "Completed ESG assessment. Modern Slavery Act statement. Living Wage employer accreditation preferred.", "priority": "Should", "owner": "procurement", "status": "Draft", "comments": ""},
         {"id": "REQ-012", "section": "Operational", "title": "Knowledge Transfer", "description": "Structured knowledge transfer at contract end. All documentation in editable formats. Client team shadows key activities for minimum 4 weeks pre-close.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
     ],
+    "scoring_criteria": [
+        {"id": "SC-01", "criterion": "Scope clarity & SoW completeness",   "pillar": "Technical",   "weight": 15, "scorer": "sme"},
+        {"id": "SC-02", "criterion": "Named team & expertise mix",         "pillar": "Technical",   "weight": 15, "scorer": "sme"},
+        {"id": "SC-03", "criterion": "Methodology & governance maturity",  "pillar": "Technical",   "weight": 10, "scorer": "business"},
+        {"id": "SC-04", "criterion": "Fee structure & rate competitiveness","pillar": "Commercial",  "weight": 25, "scorer": "procurement"},
+        {"id": "SC-05", "criterion": "Contract terms (IP, IR35, liability)","pillar": "Legal",       "weight": 15, "scorer": "procurement"},
+        {"id": "SC-06", "criterion": "Supplier ESG & social value",        "pillar": "ESG",         "weight": 10, "scorer": "business"},
+        {"id": "SC-07", "criterion": "Knowledge transfer commitment",      "pillar": "Operational", "weight": 10, "scorer": "business"},
+    ],
 }
 
 _SPEC_GENERIC: dict = {
     "category": "General Procurement",
     "summary": "Procurement of goods or services covering technical, commercial, legal, operational, and ESG dimensions.",
+    "context": {
+        "brand_preference": "Open to alternatives",
+        "geography": "UK",
+        "quantity": "TBC",
+        "budget": "TBC",
+        "timeline": "TBC",
+    },
     "requirements": [
         {"id": "REQ-001", "section": "Technical", "title": "Core Specification Compliance", "description": "Full compliance with technical specification in tender documents. Deviations clearly identified and qualified in bid.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
         {"id": "REQ-002", "section": "Technical", "title": "Quality Standards", "description": "Compliance with applicable ISO standards and UK regulations. ISO 9001 or equivalent QMS and quality plan required.", "priority": "Must", "owner": "business", "status": "Draft", "comments": ""},
@@ -436,4 +708,5 @@ _SPEC_GENERIC: dict = {
         {"id": "REQ-010", "section": "ESG", "title": "Social Value", "description": "Local employment, apprenticeships, or supply chain diversity aligned with client Social Value Charter.", "priority": "Could", "owner": "procurement", "status": "Draft", "comments": ""},
         {"id": "REQ-011", "section": "Operational", "title": "Account Management", "description": "Named account manager and escalation contact. Monthly reviews for contracts > GBP 500k pa. Direct access to delivery team.", "priority": "Should", "owner": "business", "status": "Draft", "comments": ""},
     ],
+    "scoring_criteria": _generic_scoring_criteria(),
 }
