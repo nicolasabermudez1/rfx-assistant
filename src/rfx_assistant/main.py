@@ -91,7 +91,10 @@ with st.sidebar:
     )
 
     st.divider()
-    if agents.gemini_key_available():
+    # Defensive: tolerate stale module cache where the helper isn't present yet.
+    _key_check = getattr(agents, "gemini_key_available", None)
+    _has_key = bool(_key_check()) if callable(_key_check) else bool(os.getenv("GEMINI_API_KEY"))
+    if _has_key:
         st.success("🟢  Live AI active (Gemini 2.0)")
     else:
         st.warning(
