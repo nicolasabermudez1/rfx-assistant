@@ -1,6 +1,7 @@
 """RFx Assistant — Streamlit entry point.
 
-Two tabs:
+Welcome form gates the app on first visit. After identity is captured, the
+user gets two tabs:
   0 · Spec Builder   — chatbot → LLM spec table → multi-user collaboration + email
   1 · Scoring Matrix — editable weighted scoring → collaboration + email reminders
 
@@ -13,7 +14,6 @@ import os
 import sys
 from pathlib import Path
 
-# Allow `streamlit run src/rfx_assistant/main.py` to resolve sibling modules.
 _PKG_PARENT = Path(__file__).resolve().parents[1]
 if str(_PKG_PARENT) not in sys.path:
     sys.path.insert(0, str(_PKG_PARENT))
@@ -22,8 +22,8 @@ import streamlit as st
 from dotenv import load_dotenv
 
 from rfx_assistant import agents
-from rfx_assistant.branding import inject_css, tokens, DARK_BLUE, DEEP_PURPLE
-from rfx_assistant.ui import spec_builder, scoring_matrix
+from rfx_assistant.branding import inject_css, tokens
+from rfx_assistant.ui import spec_builder, scoring_matrix, team
 
 # Load .env for local dev; on Streamlit Cloud inject st.secrets into os.environ
 load_dotenv()
@@ -39,7 +39,7 @@ except Exception:
 # ---------------------------------------------------------------------------
 
 st.set_page_config(
-    page_title="RFx Assistant — Centrica",
+    page_title="RFx Assistant",
     page_icon="📘",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -53,7 +53,7 @@ st.markdown(inject_css(THEME), unsafe_allow_html=True)
 T = tokens(THEME)
 
 # ---------------------------------------------------------------------------
-# Sidebar
+# Sidebar (always rendered — even on welcome screen)
 # ---------------------------------------------------------------------------
 
 with st.sidebar:
@@ -61,9 +61,9 @@ with st.sidebar:
         f"""<div style='background:{T["header_grad"]};
         padding:14px 18px;border-radius:10px;margin-bottom:14px'>
         <span style='color:white;font-weight:700;font-size:18px;font-family:Arial'>
-        Centrica · RFx Assistant</span><br>
+        RFx Assistant</span><br>
         <span style='color:rgba(255,255,255,0.78);font-size:12px'>
-        Procurement Transformation · Workstream 1</span>
+        AI-powered procurement spec & scoring</span>
         </div>""",
         unsafe_allow_html=True,
     )
@@ -74,24 +74,22 @@ with st.sidebar:
     if new_theme != THEME:
         st.session_state.theme = new_theme
         st.rerun()
-    st.caption(f"{'Dark' if THEME == 'dark' else 'Light'} theme · dark blue · light purple · mint pink")
 
     st.divider()
+
+    if team.is_set_up():
+        team.render_sidebar_panel()
+        st.divider()
 
     st.markdown("**How to use**")
     st.markdown(
-        "**1. Spec Builder**\n"
-        "Answer three quick questions — the AI generates a full technical "
-        "specification table for any spend category. Edit rows inline, "
-        "assign owners, and send email reminders to collaborators.\n\n"
-        "**2. Scoring Matrix**\n"
-        "Add supplier names and score them against weighted criteria. "
-        "Criteria are assigned to scorers — chase missing scores with "
-        "one-click email reminders."
+        "**1. Spec Builder** — answer three quick questions; the AI generates "
+        "a product-specific spec table and scoring matrix.\n\n"
+        "**2. Scoring Matrix** — score suppliers against the AI-generated criteria, "
+        "and chase any pending team scores with one-click email reminders."
     )
 
     st.divider()
-    # Defensive: tolerate stale module cache where the helper isn't present yet.
     _key_check = getattr(agents, "gemini_key_available", None)
     _has_key = bool(_key_check()) if callable(_key_check) else bool(os.getenv("GEMINI_API_KEY"))
     if _has_key:
@@ -99,10 +97,16 @@ with st.sidebar:
     else:
         st.warning(
             "🟡  Demo mode — no `GEMINI_API_KEY` set. "
-            "Spec will use product-specific templates instead of live AI. "
-            "Set the key in Streamlit Cloud → Settings → Secrets to enable any-product live generation."
+            "Spec will use product-specific templates instead of live AI."
         )
-    st.caption("Centrica Procurement Transformation")
+
+# ---------------------------------------------------------------------------
+# Welcome gate / main content
+# ---------------------------------------------------------------------------
+
+if not team.render_welcome():
+    # Welcome form is showing — don't render the tabs yet
+    st.stop()
 
 # ---------------------------------------------------------------------------
 # Tabs
