@@ -275,6 +275,197 @@ def gemini_key_available() -> bool:
     return bool(os.getenv("GEMINI_API_KEY"))
 
 
+# --------------------------------------------------------------------------
+# Dynamic clarifying-question generator — adapts the chatbot to ANY category.
+# --------------------------------------------------------------------------
+
+def generate_clarifying_questions(category: str) -> list[str]:
+    """Return 2 category-specific clarifying questions for the chatbot.
+
+    Calls Gemini if a key is configured, otherwise uses category-keyword
+    fallbacks so the demo still feels relevant offline.
+    """
+    prompt = (
+        f"A user wants to procure: '{category}'.\n\n"
+        "Generate exactly 2 clarifying questions to ask BEFORE drafting the technical spec.\n"
+        "Each question must:\n"
+        "  - Be SPECIFIC to this product or service category (not generic procurement boilerplate).\n"
+        "  - Focus on different aspects (one usually scope/scale, one usually constraints/preferences).\n"
+        "  - Be one sentence each in a friendly conversational tone.\n"
+        "  - Be answerable by a procurement manager or business stakeholder.\n\n"
+        "Examples:\n"
+        "  - For 'payroll services': "
+        '["How many employees do you need to cover, and across how many countries?", '
+        '"What\'s your current payroll system, and do you need integration with HR / finance / time-tracking?"]\n'
+        "  - For 'security cameras': "
+        '["How many cameras (indoor/outdoor mix) and across how many sites?", '
+        '"Any brand or VMS preference, and what level of AI analytics do you need (person/vehicle detection, line crossing, ANPR)?"]\n'
+        "  - For 'electrical subcontractors': "
+        '["What scope of work and trades do you need (e.g. installation, maintenance, gas-safe), and over what duration?", '
+        '"Where is the work located, and what certifications, insurance, and safety standards must they hold?"]\n'
+        "  - For 'office cleaning': "
+        '["How many sites, total floor area, and what frequency of cleaning?", '
+        '"Any specialist areas (kitchens, labs, server rooms), out-of-hours access, or sustainability requirements?"]\n\n'
+        "Return ONLY a JSON array of 2 question strings — no markdown fences, no explanation."
+    )
+
+    raw = _call_gemini_direct(prompt)
+    if raw:
+        try:
+            clean = raw.strip()
+            if clean.startswith("```"):
+                lines = clean.splitlines()
+                clean = "\n".join(lines[1:-1])
+            qs = json.loads(clean.strip())
+            if isinstance(qs, list) and len(qs) >= 2:
+                return [str(q).strip() for q in qs[:2] if str(q).strip()]
+        except Exception:
+            pass
+
+    return _fallback_clarifying_questions(category)
+
+
+def _fallback_clarifying_questions(category: str) -> list[str]:
+    """Category-keyword fallback when no API key is set."""
+    t = (category or "").lower()
+
+    if any(k in t for k in ["camera", "cctv", "surveillance", "ip cam"]):
+        return [
+            "How many cameras (indoor / outdoor mix) and across how many sites?",
+            "Any brand or VMS preference (Hikvision, Axis, Milestone, Genetec...), and what AI analytics do you need?",
+        ]
+    if any(k in t for k in ["payroll", "human resource", "hr service", "hcm"]):
+        return [
+            "How many employees do you need to cover, and across how many countries / pay frequencies?",
+            "What's your current payroll system, and do you need integration with HR, finance, or time-tracking systems?",
+        ]
+    if any(k in t for k in ["subcontract", "trade", "contractor", "electrician", "plumber", "engineer "]):
+        return [
+            "What trades or skills do you need (e.g. electrical, mechanical, gas-safe) and what's the scope of work?",
+            "Where is the work, what's the expected duration, and what certifications / insurance must they hold?",
+        ]
+    if any(k in t for k in ["clean", "janitor", "facility manage", "facilit"]):
+        return [
+            "How many sites, total floor area, and what cleaning frequency do you need?",
+            "Any specialist areas (kitchens, labs, server rooms), out-of-hours access, or sustainability requirements?",
+        ]
+    if any(k in t for k in ["security guard", "guarding", "concierge", "manned guard"]):
+        return [
+            "How many sites, hours of coverage per site, and what's the site risk profile?",
+            "Required certifications (SIA), patrolling vs static, and integration with existing CCTV / access control?",
+        ]
+    if any(k in t for k in ["consult", "advisory", "professional service", "managed service"]):
+        return [
+            "What's the scope of the engagement, expected deliverables, and target start date?",
+            "Any budget envelope, preferred firms, and specific expertise or certifications required?",
+        ]
+    if any(k in t for k in ["legal", "law firm", "solicitor", "barrister"]):
+        return [
+            "What practice areas (e.g. commercial, employment, regulatory) and matter volume do you expect?",
+            "Preferred panel structure, fee model (hourly / fixed / capped), and any conflict considerations?",
+        ]
+    if any(k in t for k in ["marketing", "advertising", "creative agency", "brand"]):
+        return [
+            "What's the brief — campaign, brand refresh, performance marketing, or always-on retainer?",
+            "Budget envelope, channels in scope, target audience, and any preferred agency types or exclusions?",
+        ]
+    if any(k in t for k in ["recruit", "staffing", "headhunt", "talent"]):
+        return [
+            "What roles or skill profiles do you need to hire, expected volumes, and timeline?",
+            "Permanent / contract / RPO, geographic coverage, and fee model preferences (retained / contingent / fixed)?",
+        ]
+    if any(k in t for k in ["training", "learning", "e-learning", "lms"]):
+        return [
+            "What topics, target audience size, and delivery format (instructor-led, e-learning, blended)?",
+            "Do you need LMS integration, certification, accessibility (WCAG), or multi-language content?",
+        ]
+    if any(k in t for k in ["catering", "food service", "canteen", "cafeteria"]):
+        return [
+            "How many sites, expected daily covers, and what type of service (canteen, hospitality, vending)?",
+            "Dietary requirements, sustainability / local-sourcing standards, and food-safety certifications?",
+        ]
+    if any(k in t for k in ["insurance", "broker"]):
+        return [
+            "What lines of cover do you need (property, liability, cyber, motor, D&O...) and what total sum insured?",
+            "Claims history, preferred broker / underwriter relationships, and policy renewal timeline?",
+        ]
+    if any(k in t for k in ["audit", "accounting", "tax", "advisory"]):
+        return [
+            "What's the scope — statutory audit, internal audit, tax advisory, or due diligence?",
+            "Year-end / engagement dates, jurisdictions in scope, and any specific independence requirements?",
+        ]
+    if any(k in t for k in ["batter", "bess", "energy storage"]):
+        return [
+            "What total energy capacity (MWh) and power rating (MW) do you need, and at how many sites?",
+            "Use case (grid services, peak shaving, behind-the-meter) and any grid-connection constraints?",
+        ]
+    if any(k in t for k in ["software", "saas", "cloud", "licence", "license", "platform"]):
+        return [
+            "How many users / what usage scale, and what core capabilities are non-negotiable?",
+            "Integration requirements (SSO, existing systems), compliance (GDPR, ISO 27001), and data-residency constraints?",
+        ]
+    if any(k in t for k in ["laptop", "computer", "desktop", "workstation", "device"]):
+        return [
+            "How many units, user profiles (general / power-user / field), and your refresh cycle?",
+            "Preferred OS, vendor preferences, and integration with your MDM / Intune / imaging pipeline?",
+        ]
+    if any(k in t for k in ["phone", "mobile", "smartphone", "handset"]):
+        return [
+            "How many handsets, user mix (knowledge worker / field / executive), and replacement cadence?",
+            "OS preference (iOS / Android), MDM platform, mobile carrier relationship, and any rugged-device need?",
+        ]
+    if any(k in t for k in ["vehicle", "fleet", "van", "truck", "lorry", "car "]):
+        return [
+            "How many vehicles, type (van / car / truck / EV), and what's the duty cycle?",
+            "Geographic deployment, charging or fuelling needs, and any fleet-management telematics integration?",
+        ]
+    if any(k in t for k in ["cool", "hvac", "chiller", "data centre", "datacenter"]):
+        return [
+            "What total IT load (kW / MW), how many sites, and what target PUE?",
+            "Free-cooling preference, refrigerant constraints (F-Gas / GWP), and existing DCIM integration?",
+        ]
+    if any(k in t for k in ["furniture", "desk", "chair", "office fit", "fit-out"]):
+        return [
+            "How many workstations / pieces, across how many sites, and what's the timeline?",
+            "Design and sustainability requirements, accessibility standards, and installation services needed?",
+        ]
+    if any(k in t for k in ["print", "copier", "mfp", "managed print"]):
+        return [
+            "How many devices, monthly print volume (mono vs colour), and which sites?",
+            "Managed print service preference, security requirements (pull-printing, encryption), and existing fleet brand?",
+        ]
+    if any(k in t for k in ["telecom", "broadband", "internet", "wan", "lan", "network"]):
+        return [
+            "How many sites, bandwidth per site, and topology (MPLS / SD-WAN / internet)?",
+            "Uptime SLA needs, security (SASE / firewall), and any existing carrier relationships?",
+        ]
+    if any(k in t for k in ["uniform", "ppe", "workwear", "boots"]):
+        return [
+            "How many staff, what activities (office / field / industrial / hi-vis), and replenishment cycle?",
+            "Required certifications (e.g. EN ISO 20471), branding / embroidery, and laundry-service needs?",
+        ]
+    if any(k in t for k in ["solar", "pv ", "photovoltaic"]):
+        return [
+            "Total installed capacity (kWp / MWp), number of sites, and rooftop / ground / carport?",
+            "Grid-export arrangements, on-site consumption profile, and battery integration if any?",
+        ]
+    if any(k in t for k in ["heat pump", "boiler", "heating"]):
+        return [
+            "Heat output (kW), number of dwellings or sites, and existing system (gas / electric / district)?",
+            "Compliance (MCS, F-Gas), installer-network coverage, and warranty / maintenance expectations?",
+        ]
+    if any(k in t for k in ["meter", "smart meter"]):
+        return [
+            "Meter type and quantity (electricity / gas / dual-fuel / industrial), and roll-out timeline?",
+            "Communications (cellular / mesh / LPWAN), data platform integration, and certification (SMETS2 / MID)?",
+        ]
+    # Generic fallback
+    return [
+        "What's the approximate scale of this procurement (volume, sites, users, or estimated contract value)?",
+        "Any key constraints, brand or supplier preferences, compliance requirements, or timeline that matter here?",
+    ]
+
+
 def generate_spec_from_conversation(messages: list[dict]) -> dict:
     """
     Build a procurement spec + scoring matrix from a chatbot conversation.

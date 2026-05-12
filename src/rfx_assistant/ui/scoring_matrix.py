@@ -69,6 +69,18 @@ def _human_time(iso: str) -> str:
         return iso
 
 
+def _with_original(c: dict) -> dict:
+    """Ensure a criterion has an 'original' snapshot (for the track-changes view)."""
+    if "original" not in c:
+        c["original"] = {
+            "pillar":    c.get("pillar"),
+            "criterion": c.get("criterion"),
+            "weight":    c.get("weight"),
+            "scorer":    c.get("scorer") or c.get("scorer_name"),
+        }
+    return c
+
+
 def _scorer_name(role_or_name: str) -> str:
     """Map a stored 'scorer' (role key or name) to a team-member display name."""
     members = team.get_team()
@@ -129,7 +141,7 @@ def render():
     # Empty state
     if not criteria:
         if spec and spec.get("scoring_criteria"):
-            st.session_state.sm_criteria = [dict(c) for c in spec["scoring_criteria"]]
+            st.session_state.sm_criteria = [_with_original(dict(c)) for c in spec["scoring_criteria"]]
             criteria = st.session_state.sm_criteria
         else:
             st.info(
@@ -153,7 +165,7 @@ def render():
                 "Click → to re-sync."
             )
             if c_r.button("🔄  Sync to spec", use_container_width=True):
-                st.session_state.sm_criteria = [dict(c) for c in spec["scoring_criteria"]]
+                st.session_state.sm_criteria = [_with_original(dict(c)) for c in spec["scoring_criteria"]]
                 for k in list(st.session_state.keys()):
                     if k.startswith("sm_sent_") or k.startswith("sm_drafted_"):
                         st.session_state[k] = False
@@ -184,6 +196,7 @@ def render():
             c["scorer_name"] = _scorer_name(stored) if stored not in member_names else stored
             c.setdefault("last_edited_by", "AI")
             c.setdefault("last_edited_at", datetime.now(tz=timezone.utc).isoformat())
+            _with_original(c)
 
         def _edit_badge(c: dict) -> str:
             by = c.get("last_edited_by", "AI")
@@ -266,6 +279,7 @@ def render():
                 "s_a": s_a, "s_b": s_b, "s_c": s_c,
                 "last_edited_by": orig.get("last_edited_by", "AI"),
                 "last_edited_at": orig.get("last_edited_at", now_iso),
+                "original": orig.get("original"),  # preserve AI snapshot
             }
             # Compare core fields (excluding attribution) to detect a user edit
             core_keys = ("pillar", "criterion", "weight", "scorer", "s_a", "s_b", "s_c")
@@ -314,6 +328,73 @@ def render():
             file_name="scoring_matrix.csv",
             mime="text/csv",
         )
+
+        # ---- Track Changes panel (Word-style diff vs AI draft) ----
+        _CRIT_TRACK_FIELDS = (
+            ("criterion", "Criterion"),
+            ("pillar",    "Pillar"),
+            ("weight",    "Weight (%)"),
+            ("scorer",    "Scorer"),
+        )
+        crit_changes = []
+        for c in criteria:
+            orig = c.get("original") or {}
+            diffs = []
+            for key, label in _CRIT_TRACK_FIELDS:
+                old = orig.get(key)
+                new = c.get(key) if key != "scorer" else (c.get("scorer_name") or c.get("scorer"))
+                if str(old or "") != str(new or ""):
+                    diffs.append((label, old, new))
+            if diffs:
+                crit_changes.append((c, diffs))
+
+        st.write("")
+        if crit_changes:
+            with st.expander(
+                f"📝  Track changes — {len(crit_changes)} criterion / criteria edited since the AI draft",
+                expanded=True,
+            ):
+                st.caption(
+                    "Each entry shows what the AI originally drafted vs the current "
+                    "version, like Word's track-changes view."
+                )
+                for c, diffs in crit_changes:
+                    by = c.get("last_edited_by", "Unknown")
+                    at = _human_time(c.get("last_edited_at", "")) if c.get("last_edited_at") else ""
+                    actor_label = (
+                        f"<b>{by.split()[0] if by != 'AI' else by}</b>"
+                        f" · <span style='color:var(--muted);font-size:11px'>{at}</span>"
+                    )
+                    st.markdown(
+                        f"<div style='border-left:3px solid var(--brand-deep-purple);"
+                        f"padding:8px 14px;margin:8px 0;background:var(--surface-2);"
+                        f"border-radius:6px'>"
+                        f"<div style='font-weight:700;font-size:13px'>"
+                        f"{c['id']} · {c.get('criterion','')}</div>"
+                        f"<div style='font-size:11px;color:var(--muted);margin-bottom:6px'>"
+                        f"edited by {actor_label}</div>"
+                        + "".join(
+                            f"<div style='font-size:13px;margin:4px 0'>"
+                            f"<b>{label}:</b><br>"
+                            f"<del style='color:#b3303f;background:#ffe9eb;"
+                            f"padding:2px 6px;border-radius:3px;text-decoration:line-through;"
+                            f"margin-right:6px;display:inline-block'>"
+                            f"{(str(old) if old not in (None, '') else '—')}</del>"
+                            f"<ins style='color:#0a6e2a;background:#dcf6e3;"
+                            f"padding:2px 6px;border-radius:3px;text-decoration:none;"
+                            f"display:inline-block'>"
+                            f"{(str(new) if new not in (None, '') else '—')}</ins>"
+                            f"</div>"
+                            for (label, old, new) in diffs
+                        )
+                        + "</div>",
+                        unsafe_allow_html=True,
+                    )
+        else:
+            st.caption(
+                "📝  *Track changes will appear here once anyone edits a criterion — "
+                "every change is logged against its author.*"
+            )
 
     # ---- RIGHT: collaboration ----
     with col_collab:

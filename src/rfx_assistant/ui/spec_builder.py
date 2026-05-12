@@ -25,9 +25,12 @@ def _init():
     st.session_state.setdefault("sb_spec", None)
     st.session_state.setdefault("sb_stage", 0)
     st.session_state.setdefault("sb_activity", [])
-    st.session_state.setdefault("sb_reminder_drafted", {})  # keyed by target user id
+    st.session_state.setdefault("sb_reminder_drafted", {})
     st.session_state.setdefault("sb_reminder_sent", {})
     st.session_state.setdefault("sb_generating", False)
+    # Dynamic, category-tailored clarifying questions (populated after stage 0)
+    st.session_state.setdefault("sb_dynamic_questions", [])
+    st.session_state.setdefault("sb_category_text", "")
 
 
 def _active_user() -> dict | None:
@@ -69,22 +72,37 @@ _GREETING = (
 
 
 def _bot_reply_for_stage(stage: int, user_msg: str) -> tuple[str, bool]:
+    """Bot reply for the current stage. Uses category-aware dynamic questions
+    generated after the user answers stage 0."""
+    qs = st.session_state.get("sb_dynamic_questions", [])
+
     if stage == 0:
+        # The user just told us what they want to buy. We've already kicked off
+        # question generation in _render_chat — qs should be populated.
+        category = st.session_state.get("sb_category_text", user_msg.strip())
+        if qs:
+            return (
+                f"Got it — **{category}**. Two quick questions tailored to that:\n\n"
+                f"**{qs[0]}**",
+                False,
+            )
         return (
-            f"Got it — **{user_msg.strip()}**. A couple of quick questions "
-            f"to tailor the spec to your product:\n\n"
-            f"**What scale or volume are you looking at?** "
-            f"(e.g. number of units, sites, users, or estimated contract value)",
+            f"Got it — **{category}**. What's the approximate scale or scope?",
             False,
         )
+
     if stage == 1:
+        if len(qs) >= 2:
+            return (
+                f"Thanks. Last one:\n\n**{qs[1]}** — or type **none** to proceed.",
+                False,
+            )
         return (
-            "Thanks. Last question:\n\n"
-            "**Any brand preference, geographic deployment, or must-have features?** "
-            "(e.g. _'Hikvision or Axis, UK only, must have 30m IR and ONVIF integration'_) "
-            "— or type **none** to proceed with sensible defaults.",
+            "Thanks. Any key constraints, preferences, or compliance "
+            "requirements? — or type **none** to proceed.",
             False,
         )
+
     return (
         "Perfect — I have everything I need. "
         "**Building your product-specific specification and scoring matrix now…**",
@@ -140,7 +158,10 @@ def _render_chat():
             "Building your spec from product-specific templates…"
         ):
             spec = agents.generate_spec_from_conversation(msgs)
-        # Stamp every AI-drafted row with attribution
+        # Stamp every AI-drafted row with attribution.
+        # The 'original' snapshot for requirements is captured in the workspace
+        # render once owner_name is resolved (see below). Scoring criteria are
+        # snapshotted here since their fields are stable at generation time.
         now_iso = datetime.now(tz=timezone.utc).isoformat()
         for r in spec.get("requirements", []):
             r["last_edited_by"] = "AI"
@@ -148,6 +169,12 @@ def _render_chat():
         for c in spec.get("scoring_criteria", []):
             c["last_edited_by"] = "AI"
             c["last_edited_at"] = now_iso
+            c["original"] = {
+                "pillar":    c.get("pillar"),
+                "criterion": c.get("criterion"),
+                "weight":    c.get("weight"),
+                "scorer":    c.get("scorer"),
+            }
         st.session_state.sb_spec = spec
         st.session_state.sb_stage = 4
         st.session_state.sb_generating = False
@@ -170,6 +197,18 @@ def _render_chat():
         if prompt := st.chat_input("Type your answer…"):
             stage = st.session_state.sb_stage
             msgs.append({"role": "user", "content": prompt})
+
+            # When the user answers stage 0 (the category), generate the
+            # category-specific clarifying questions before composing the
+            # bot's reply.
+            if stage == 0:
+                cat = prompt.strip()
+                st.session_state.sb_category_text = cat
+                with st.spinner(f"Tailoring questions to '{cat}'…"):
+                    st.session_state.sb_dynamic_questions = (
+                        agents.generate_clarifying_questions(cat)
+                    )
+
             reply, _ = _bot_reply_for_stage(stage, prompt)
             msgs.append({"role": "assistant", "content": reply})
             st.session_state.sb_stage = stage + 1
@@ -207,6 +246,16 @@ def _render_workspace():
         r.setdefault("owner_name", _owner_name_for_row(r.get("owner", "business")))
         r.setdefault("last_edited_by", "AI")
         r.setdefault("last_edited_at", datetime.now(tz=timezone.utc).isoformat())
+        # Snapshot the AI draft if it wasn't captured at generation time
+        if "original" not in r:
+            r["original"] = {
+                "section": r.get("section"),
+                "title": r.get("title"),
+                "description": r.get("description"),
+                "priority": r.get("priority"),
+                "owner_name": r.get("owner_name"),
+                "status": r.get("status", "Draft"),
+            }
 
     # Summary header
     st.markdown(f"**{spec['category']}** — {spec['summary']}")
@@ -366,9 +415,79 @@ def _render_workspace():
         with btn_r:
             if st.button("↺  Start a new spec", use_container_width=True):
                 for k in ["sb_messages", "sb_spec", "sb_stage", "sb_activity",
-                          "sb_reminder_drafted", "sb_reminder_sent", "sb_generating"]:
+                          "sb_reminder_drafted", "sb_reminder_sent", "sb_generating",
+                          "sb_dynamic_questions", "sb_category_text"]:
                     st.session_state.pop(k, None)
                 st.rerun()
+
+        # ---- Track Changes panel (Word-style diff vs AI draft) ----
+        _SPEC_TRACK_FIELDS = (
+            ("title",       "Requirement"),
+            ("description", "Target specification"),
+            ("section",     "Section"),
+            ("priority",    "Priority"),
+            ("owner_name",  "Owner"),
+            ("status",      "Status"),
+        )
+        rows_with_changes = []
+        for r in reqs:
+            orig = r.get("original") or {}
+            diffs = []
+            for key, label in _SPEC_TRACK_FIELDS:
+                old = orig.get(key)
+                new = r.get(key)
+                if str(old or "") != str(new or ""):
+                    diffs.append((label, old, new))
+            if diffs:
+                rows_with_changes.append((r, diffs))
+
+        st.write("")
+        if rows_with_changes:
+            with st.expander(
+                f"📝  Track changes — {len(rows_with_changes)} row(s) edited since the AI draft",
+                expanded=True,
+            ):
+                st.caption(
+                    "Each entry shows what was originally drafted by the AI vs the "
+                    "current version, like Word's track-changes view."
+                )
+                for r, diffs in rows_with_changes:
+                    by = r.get("last_edited_by", "Unknown")
+                    at = _human_time(r.get("last_edited_at", "")) if r.get("last_edited_at") else ""
+                    actor_label = (
+                        f"<b>{by.split()[0] if by != 'AI' else by}</b>"
+                        f" · <span style='color:var(--muted);font-size:11px'>{at}</span>"
+                    )
+                    st.markdown(
+                        f"<div style='border-left:3px solid var(--brand-deep-purple);"
+                        f"padding:8px 14px;margin:8px 0;background:var(--surface-2);"
+                        f"border-radius:6px'>"
+                        f"<div style='font-weight:700;font-size:13px'>"
+                        f"{r['id']} · {r.get('title','')}</div>"
+                        f"<div style='font-size:11px;color:var(--muted);margin-bottom:6px'>"
+                        f"edited by {actor_label}</div>"
+                        + "".join(
+                            f"<div style='font-size:13px;margin:4px 0'>"
+                            f"<b>{label}:</b><br>"
+                            f"<del style='color:#b3303f;background:#ffe9eb;"
+                            f"padding:2px 6px;border-radius:3px;text-decoration:line-through;"
+                            f"margin-right:6px;display:inline-block'>"
+                            f"{(str(old) if old not in (None, '') else '—')}</del>"
+                            f"<ins style='color:#0a6e2a;background:#dcf6e3;"
+                            f"padding:2px 6px;border-radius:3px;text-decoration:none;"
+                            f"display:inline-block'>"
+                            f"{(str(new) if new not in (None, '') else '—')}</ins>"
+                            f"</div>"
+                            for (label, old, new) in diffs
+                        )
+                        + "</div>",
+                        unsafe_allow_html=True,
+                    )
+        else:
+            st.caption(
+                "📝  *Track changes will appear here once anyone edits a row — every "
+                "change is logged against its author so the team can iterate on the AI draft.*"
+            )
 
     # ---- RIGHT: collaboration ----
     with col_side:
