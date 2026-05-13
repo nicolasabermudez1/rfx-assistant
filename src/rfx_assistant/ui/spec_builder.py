@@ -67,8 +67,68 @@ def _human_time(iso: str) -> str:
 _GREETING = (
     "Hi! I'm your RFx Assistant. **What are you looking to procure?** "
     "Describe it in a few words — it could be anything from software licences "
-    "to industrial batteries to professional services."
+    "to industrial batteries to professional services.\n\n"
+    "💡 *Tip: drop existing specs, RFP templates, or any reference document "
+    "into the upload zone below and I'll fold them into the spec.*"
 )
+
+
+# ---------------------------------------------------------------------------
+# File upload — extract plain text from any document the user attaches
+# ---------------------------------------------------------------------------
+
+_SUPPORTED_TYPES = ["pdf", "docx", "xlsx", "xlsm", "csv", "txt", "md", "json", "yml", "yaml"]
+
+
+def _extract_text(uploaded_file) -> str:
+    """Best-effort plain-text extraction from an uploaded file."""
+    name = (uploaded_file.name or "").lower()
+    try:
+        uploaded_file.seek(0)
+        if name.endswith(".pdf"):
+            import pypdf
+            reader = pypdf.PdfReader(uploaded_file)
+            return "\n".join((p.extract_text() or "") for p in reader.pages)
+        if name.endswith(".docx"):
+            from docx import Document
+            doc = Document(uploaded_file)
+            parts = [p.text for p in doc.paragraphs if p.text]
+            for tbl in doc.tables:
+                for row in tbl.rows:
+                    parts.append(" | ".join(cell.text for cell in row.cells))
+            return "\n".join(parts)
+        if name.endswith((".xlsx", ".xlsm", ".xls")):
+            import pandas as pd
+            sheets = pd.read_excel(uploaded_file, sheet_name=None)
+            return "\n\n".join(
+                f"## Sheet: {sn}\n{df.to_csv(index=False)}"
+                for sn, df in sheets.items()
+            )
+        if name.endswith(".csv"):
+            import pandas as pd
+            df = pd.read_csv(uploaded_file)
+            return df.to_csv(index=False)
+        # Plain text formats (.txt, .md, .json, .yml, .yaml, unknown)
+        data = uploaded_file.read()
+        if isinstance(data, bytes):
+            return data.decode("utf-8", errors="ignore")
+        return str(data)
+    except Exception as e:
+        return f"[Could not extract text from {uploaded_file.name}: {e}]"
+
+
+def _collect_attached_text(uploaded_files) -> str:
+    """Extract + cache text from every attached file. Returns concatenated text."""
+    if not uploaded_files:
+        return ""
+    cache = st.session_state.setdefault("sb_extract_cache", {})
+    parts = []
+    for f in uploaded_files:
+        key = f"{f.name}|{getattr(f, 'size', '?')}"
+        if key not in cache:
+            cache[key] = _extract_text(f)
+        parts.append(f"\n\n--- FILE: {f.name} ---\n{cache[key]}")
+    return "\n".join(parts)
 
 
 def _bot_reply_for_stage(stage: int, user_msg: str) -> tuple[str, bool]:
@@ -149,15 +209,43 @@ def _render_chat():
         with st.chat_message(m["role"]):
             st.markdown(m["content"])
 
+    # ------------------------------------------------------------------
+    # File uploader — accepts any reference docs the user wants the AI to use
+    # ------------------------------------------------------------------
+    uploaded = st.file_uploader(
+        "📎  Attach existing specs, RFP templates, or any reference documentation "
+        "(PDF, Word, Excel, CSV, TXT, MD, JSON, YAML — multiple files OK)",
+        type=_SUPPORTED_TYPES,
+        accept_multiple_files=True,
+        key="sb_upload_widget",
+    )
+    if uploaded:
+        names_html = " ".join(
+            f"<span style='background:var(--surface-2);"
+            f"border:1px solid var(--border);border-radius:12px;"
+            f"padding:3px 10px;font-size:12px;margin-right:4px;"
+            f"display:inline-block'>📄 {f.name}</span>"
+            for f in uploaded
+        )
+        st.markdown(
+            f"<div style='margin:6px 0 10px 0'>"
+            f"<b>{len(uploaded)} file(s) attached:</b> {names_html}<br>"
+            f"<span style='color:var(--muted);font-size:12px'>"
+            f"The AI will use these to tailor the spec when you finish the questions."
+            f"</span></div>",
+            unsafe_allow_html=True,
+        )
+
     if st.session_state.sb_stage == 3 and not st.session_state.sb_generating:
         st.session_state.sb_generating = True
+        attached_text = _collect_attached_text(uploaded)
         live = agents.gemini_key_available()
-        with st.spinner(
-            "Calling Gemini to tailor your spec + scoring matrix…"
-            if live else
-            "Building your spec from product-specific templates…"
-        ):
-            spec = agents.generate_spec_from_conversation(msgs)
+        msg = "Calling Gemini to tailor your spec + scoring matrix…" if live else \
+              "Building your spec from product-specific templates…"
+        if attached_text:
+            msg = msg.rstrip("…") + " (using your uploaded docs)…"
+        with st.spinner(msg):
+            spec = agents.generate_spec_from_conversation(msgs, attached_text=attached_text)
         # Stamp every AI-drafted row with attribution.
         # The 'original' snapshot for requirements is captured in the workspace
         # render once owner_name is resolved (see below). Scoring criteria are
@@ -416,7 +504,8 @@ def _render_workspace():
             if st.button("↺  Start a new spec", use_container_width=True):
                 for k in ["sb_messages", "sb_spec", "sb_stage", "sb_activity",
                           "sb_reminder_drafted", "sb_reminder_sent", "sb_generating",
-                          "sb_dynamic_questions", "sb_category_text"]:
+                          "sb_dynamic_questions", "sb_category_text",
+                          "sb_upload_widget", "sb_extract_cache"]:
                     st.session_state.pop(k, None)
                 st.rerun()
 

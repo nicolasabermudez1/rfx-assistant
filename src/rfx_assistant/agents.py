@@ -466,30 +466,45 @@ def _fallback_clarifying_questions(category: str) -> list[str]:
     ]
 
 
-def generate_spec_from_conversation(messages: list[dict]) -> dict:
+def generate_spec_from_conversation(
+    messages: list[dict],
+    attached_text: str = "",
+) -> dict:
     """
-    Build a procurement spec + scoring matrix from a chatbot conversation.
+    Build a procurement spec + scoring matrix from a chatbot conversation
+    plus any attached reference documents (existing specs, RFP templates, etc.).
     Calls Gemini directly (ignores DEMO_OFFLINE_MODE); falls back to
     keyword-matched product-specific fixtures if no key or API failure.
 
-    messages: list of {"role": "user"|"assistant", "content": str}
-    Returns: {
-        "category": str,
-        "summary": str,
-        "context": {brand_preference, geography, quantity, budget, timeline},
-        "requirements": list[dict],   # spec rows
-        "scoring_criteria": list[dict] # evaluation criteria for bids
-    }
+    messages:      list of {"role": "user"|"assistant", "content": str}
+    attached_text: concatenated plain text extracted from any uploaded files
     """
     user_text = "\n".join(
         m["content"] for m in messages if m["role"] == "user"
+    )
+
+    # Truncate attached docs to keep prompt under a sane size for Gemini Flash.
+    MAX_ATTACHED = 10000
+    if attached_text and len(attached_text) > MAX_ATTACHED:
+        attached_text = (
+            attached_text[:MAX_ATTACHED]
+            + f"\n\n...[truncated — {len(attached_text) - MAX_ATTACHED} chars omitted]"
+        )
+
+    attached_block = (
+        "\n\nREFERENCE DOCUMENTS UPLOADED BY THE USER (use as primary source — "
+        "extract specs, brand standards, compliance requirements, and any concrete "
+        "numbers or thresholds; do NOT copy verbatim, distill into the spec table):\n"
+        f"```\n{attached_text}\n```\n"
+        if attached_text else ""
     )
 
     prompt = (
         "You are an expert procurement technologist building a TECHNICAL SPECIFICATION "
         "for a SPECIFIC product — not a generic procurement template.\n\n"
         "USER CONVERSATION (what they want to buy):\n"
-        f"{user_text}\n\n"
+        f"{user_text}\n"
+        f"{attached_block}\n"
         "TASK: Return ONLY valid JSON (no markdown, no commentary) describing:\n"
         "  (a) the product context they captured (brand preference, geography, quantity, "
         "      budget, timeline — extract from the conversation, default to 'TBC' if absent)\n"
