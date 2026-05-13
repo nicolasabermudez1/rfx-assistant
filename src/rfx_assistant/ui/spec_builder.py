@@ -31,6 +31,13 @@ def _init():
     # Dynamic, category-tailored clarifying questions (populated after stage 0)
     st.session_state.setdefault("sb_dynamic_questions", [])
     st.session_state.setdefault("sb_category_text", "")
+    # Downstream dispatch targets (Nego Buddy / Contracting agent / Ariba)
+    st.session_state.setdefault("sb_dispatch_targets", {
+        "nego_buddy": True, "contracting_agent": True, "ariba": True,
+    })
+    st.session_state.setdefault("sb_dispatched", {
+        "nego_buddy": False, "contracting_agent": False, "ariba": False,
+    })
 
 
 def _active_user() -> dict | None:
@@ -505,7 +512,8 @@ def _render_workspace():
                 for k in ["sb_messages", "sb_spec", "sb_stage", "sb_activity",
                           "sb_reminder_drafted", "sb_reminder_sent", "sb_generating",
                           "sb_dynamic_questions", "sb_category_text",
-                          "sb_upload_widget", "sb_extract_cache"]:
+                          "sb_upload_widget", "sb_extract_cache",
+                          "sb_dispatch_targets", "sb_dispatched"]:
                     st.session_state.pop(k, None)
                 st.rerun()
 
@@ -577,6 +585,9 @@ def _render_workspace():
                 "📝  *Track changes will appear here once anyone edits a row — every "
                 "change is logged against its author so the team can iterate on the AI draft.*"
             )
+
+        # ---- Submit & dispatch ----
+        _render_dispatch_panel(spec, me)
 
     # ---- RIGHT: collaboration ----
     with col_side:
@@ -729,3 +740,106 @@ def _data_editor_tall(df, col_cfg, *, num_rows: str, key: str, height: int):
             height=height,
             key=key,
         )
+
+
+# ---------------------------------------------------------------------------
+# Submit & dispatch — hand the approved RFx off to downstream systems
+# ---------------------------------------------------------------------------
+
+_DISPATCH_TARGETS = [
+    ("nego_buddy",
+     "🤝  Nego Buddy",
+     "AI negotiation agent — opens supplier negotiation on the awarded shortlist."),
+    ("contracting_agent",
+     "📝  Contracting agent",
+     "Drafts the contract from the approved spec and routes for legal review."),
+    ("ariba",
+     "🏢  SAP Ariba",
+     "Creates the sourcing event (Doc12876211) so suppliers can be invited."),
+]
+
+_DISPATCH_DETAIL = {
+    "nego_buddy":        "supplier negotiation initiated",
+    "contracting_agent": "contract draft kicked off, legal queue notified",
+    "ariba":             "RFP published to sourcing event Doc12876211",
+}
+
+_DISPATCH_LABEL = {
+    "nego_buddy":        "Nego Buddy",
+    "contracting_agent": "Contracting agent",
+    "ariba":             "SAP Ariba (Doc12876211)",
+}
+
+
+def _render_dispatch_panel(spec: dict, me: dict):
+    st.divider()
+    st.markdown("##### 🚀  Submit & dispatch")
+    st.caption(
+        f"Hand the approved **{spec['category']}** spec off to downstream "
+        f"procurement systems. Each destination is notified independently."
+    )
+
+    targets = st.session_state.sb_dispatch_targets
+    dispatched = st.session_state.sb_dispatched
+
+    # Destination checkboxes
+    cols = st.columns(3)
+    for i, (key, label, desc) in enumerate(_DISPATCH_TARGETS):
+        with cols[i]:
+            already_sent = dispatched.get(key, False)
+            checked = st.checkbox(
+                f"**{label}**",
+                value=targets.get(key, True),
+                key=f"sb_dispatch_cb_{key}",
+                disabled=already_sent,
+                help=desc,
+            )
+            targets[key] = checked
+            if already_sent:
+                st.caption(f"✅ Sent · {_human_time(dispatched.get(f'{key}_at', ''))}")
+            else:
+                st.caption(desc)
+
+    st.session_state.sb_dispatch_targets = targets
+
+    # Submit button
+    pending = [k for k, _, _ in _DISPATCH_TARGETS if targets.get(k) and not dispatched.get(k)]
+    sent_keys = [k for k, _, _ in _DISPATCH_TARGETS if dispatched.get(k)]
+
+    if not pending and sent_keys:
+        sent_to = ", ".join(_DISPATCH_LABEL[k] for k in sent_keys)
+        st.success(f"✅  **RFx submitted to:** {sent_to}")
+        if st.button("Re-open dispatch", key="sb_reopen_dispatch", use_container_width=False):
+            for k in dispatched:
+                dispatched[k] = False
+            st.rerun()
+        return
+
+    if not pending:
+        st.warning("Select at least one destination to submit.")
+        return
+
+    if st.button(
+        f"🚀  Submit RFx  →  {len(pending)} destination{'s' if len(pending) != 1 else ''}",
+        type="primary",
+        key="sb_submit_dispatch",
+        use_container_width=True,
+    ):
+        progress = st.empty()
+        now_iso = datetime.now(tz=timezone.utc).isoformat()
+        for key in pending:
+            label = _DISPATCH_LABEL[key]
+            detail = _DISPATCH_DETAIL[key]
+            with progress:
+                with st.spinner(f"Submitting to {label}…"):
+                    time.sleep(0.7)
+            dispatched[key] = True
+            dispatched[f"{key}_at"] = now_iso
+            _push_activity(
+                f"submitted RFx '{spec['category']}' to {label} — {detail}",
+                me, icon="🚀",
+            )
+        progress.empty()
+        st.session_state.sb_dispatched = dispatched
+        st.toast("RFx submitted successfully", icon="🚀")
+        st.rerun()
